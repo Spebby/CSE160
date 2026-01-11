@@ -1,0 +1,8 @@
+include: [".well-known"]
+title: "CSE-160"
+description: "All of Thom's submissions for CSE-160, Winter '26 @ UCSC."
+url: "https://spebby.net"
+whitelist:
+  - jekyll-redirect-from
+plugins:
+  - jekyll-redirect-from
