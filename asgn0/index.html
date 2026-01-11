@@ -1,5 +1,5 @@
 ---
-title: Assignment 0
+title: Vector Library
 permalink: /asgn0/
 redirect_from:
   - /Asgn0/
@@ -8,16 +8,102 @@ redirect_from:
 
 <!DOCTYPE html>
 <html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<title>Draw a blue rectangle (canvas version)</title>
-	</head>
-
-	<body onload="main()">
-		<canvas id="example" width="400" height="400">
-		Please use a browser that supports "canvas"
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>{{ page.title }}</title>
+	{% include og-meta.html %}
+	{% include common-head.html %}
+</head>
+<body onload="main()" data-bs-theme="dark" class="bg text-light py-4">
+	<div class="container">
+		<!-- Canvas -->
+		<div class="text-center mb-4">
+		<canvas id="example" width="400" height="400" style="position: relative; z-index: 1; pointer-events: auto; border: 1px solid #0d6efd; background-color: #000;">
+			Your browser does not support the canvas element.
 		</canvas>
-		<script src="asgn0.js"></script>
-		<script src="lib/cuon-matrix-cse160.js"></script>
-	</body>
+	
+		<div id="log" class="hidden card bg-secondary text-light h-100">
+			<p id="logText" class="card-header">Placeholder</p>
+		</div>
+	</div>
+
+	<!-- v1 and v2 side by side -->
+	<div id="Vector Info">
+		<div class="row mb-4 g-3">
+			<!-- v1 -->
+			<div class="col-md-6">
+				<div class="card bg-secondary text-light h-100">
+					<h5 class="card-header">v1</h5>
+					<div class="card-body">
+						<div class="mb-3">
+							<label for="v1x" class="form-label">X</label>
+							<input type="text" id="v1x" class="form-control form-control" placeholder="Enter X">
+						</div>
+						<div>
+							<label for="v1y" class="form-label">Y</label>
+							<input type="text" id="v1y" class="form-control form-control" placeholder="Enter Y">
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- v2 -->
+			<div class="col-md-6">
+				<div class="card bg-secondary text-light h-100">
+					<h5 class="card-header">v2</h5>
+					<div class="card-body">
+						<div class="mb-3">
+							<label for="v2x" class="form-label">X</label>
+							<input type="text" id="v2x" class="form-control form-control" placeholder="Enter X">
+						</div>
+						<div>
+							<label for="v2y" class="form-label">Y</label>
+							<input type="text" id="v2y" class="form-control form-control" placeholder="Enter Y">
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Draw Vectors Button -->
+		<div class="d-grid mb-4">
+			<button class="btn btn-primary" onclick="handleDrawEvent()">Draw Vectors</button>
+		</div>
+	</div>
+
+	<!-- Operations -->
+	<div class="card bg-secondary text-light mb-3">
+		<h5 class="card-header">Vector Operation</h5>
+		<div class="card-body row g-3 align-items-end">
+			<div class="col-md-6">
+				<label for="op" class="form-label">Operation</label>
+				<select id="op" class="form-select bg text-light">
+					<option value="add">Add</option>
+					<option value="sub">Subtract</option>
+					<option value="mul">Multiply</option>
+					<option value="div">Divide</option>
+					<option value="mag">Magnitude</option>
+					<option value="norm">Normalise</option>
+					<option value="angle">Angle Between</option>
+					<option value="area">Area</option>
+				</select>
+			</div>
+			<div class="col-md-6">
+				<label for="sc" class="form-label">Scalar</label>
+				<input type="text" id="sc" class="form-control form-control" placeholder="Enter scalar value">
+			</div>
+			<div class="col-12">
+				<button class="btn btn-success w-100" onclick="handleDrawOperationEvent()">Perform Operation</button>
+			</div>
+		</div>
+	</div>
+
+	<a href="./lib/vectorTests.html">tests</a>
+
+	<!--Bootstrapping-->
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+	<script src="asgn0.js"></script>
+	<script src="lib/cuon-matrix-cse160.js"></script>
+</body>
 </html>
