@@ -1,0 +1,88 @@
+---
+title: Paint
+permalink: /asgn1/
+redirect_from:
+  - /Asgn1/
+  - /a1/
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>{{ page.title }}</title>
+	{% include og-meta.html %}
+	{% include common-head.html %}
+</head>
+<body onload="main()" data-bs-theme="dark" class="bg text-light py-4">
+	<div class="container">
+		<!-- Canvas -->
+		<div class="text-center mb-4">
+		<canvas id="example" width="800" height="800" style="position: relative; z-index: 1; pointer-events: auto; border: 1px solid #0d6efd; background-color: #000;">
+			Your browser does not support the canvas element.
+		</canvas>
+
+	<div class="card shadow-sm">
+		<div class="card-body">
+			<!-- Clear -->
+			<div class="mb-3">
+				<button id="clearCanvas" class="btn btn-outline-secondary btn-sm" type="button"> Clear Canvas </button>
+			</div>
+
+			<!-- Drawing Mode -->
+			<div class="mb-4">
+				<label class="form-label fw-semibold d-block">Drawing Mode:</label>
+				<div id="drawingMode" class="btn-group" role="group" aria-label="Drawing mode">
+							<input type="radio" class="btn-check" name="mode" id="modeSquares" value="squares" checked>
+					<label class="btn btn-outline-primary" for="modeSquares">Squares</label>
+					<input type="radio" class="btn-check" name="mode" id="modeTriangles" value="triangles">
+					<label class="btn btn-outline-primary" for="modeTriangles">Triangles</label>
+					<input type="radio" class="btn-check" name="mode" id="modeCircles" value="circles">
+					<label class="btn btn-outline-primary" for="modeCircles">Circles</label>
+				</div>
+			</div>
+
+			<!-- Shape Colour -->
+			<div class="mb-4">
+				<label class="form-label fw-semibold">Shape Colour:</label>
+				<div class="row g-3 align-items-center">
+					<div class="col-md-4">
+						<label for="colourRed" class="form-label">Red</label>
+						<input type="range" class="form-range" id="cR" min="0" max="255" value="255">
+					</div>
+
+					<div class="col-md-4">
+						<label for="colourGreen" class="form-label">Green</label>
+						<input type="range" class="form-range" id="cG" min="0" max="255" value="255">
+					</div>
+
+					<div class="col-md-4">
+						<label for="colourBlue" class="form-label">Blue</label>
+						<input type="range" class="form-range" id="cB" min="0" max="255" value="255">
+					</div>
+				</div>
+			</div>
+
+			<!-- Size / Segment Count -->
+			<div class="row g-4 align-items-center">
+				<div class="col-md-6">
+					<label for="shapeSize" class="form-label fw-semibold">Shape Size:</label>
+					<input type="range" class="form-range" id="sSize" min="1" max="100" value="25">
+				</div>
+
+				<div class="col-md-6">
+					<label for="circleSegments" class="form-label fw-semibold">(Circles) Segment Count:</label>
+					<input type="range" class="form-range" id="cSeg" min="3" max="64" value="16">
+				</div>
+			</div>
+		</div>
+	</div>
+	</div>
+
+	<!--Bootstrapping-->
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+	<script src="asgn1.js"></script>
+	<script src="lib/cuon-matrix-cse160.js"></script>
+</body>
+</html>
