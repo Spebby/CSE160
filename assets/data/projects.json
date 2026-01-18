@@ -1,9 +1,16 @@
 {
 	"projects": [
 		{
+			"title": "Paint App",
+			"description": "A simplistic paint app using WebGL",
+			"image": "./assets/images/paint.png",
+			"tags": [],
+			"link": "./asgn1"
+		},
+		{
 			"title": "Vector Library",
 			"description": "Starting assignment.",
-			"image": "",
+			"image": "./assets/images/vectors.png",
 			"tags": [],
 			"link": "./asgn0"
 		}
