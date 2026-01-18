@@ -6,7 +6,7 @@ var H;
 var HH;
 var HW;
 const SCALE = 20;
-const DEG_TO_RAD = Math.PI / 180;
+const RAD_TO_DEG = 180 / Math.PI;
 
 function main() {
 	// Retrieve <canvas> element <- (1)
@@ -122,7 +122,7 @@ function angleBetween(v1, v2) {
 	const v1m = v1.magnitude();
 	const v2m = v2.magnitude();
 	const cosTheta = Vector3.dot(v1, v2) / (v1m * v2m);
-	return Math.acos(cosTheta) * DEG_TO_RAD;
+	return Math.acos(cosTheta) * RAD_TO_DEG;
 }
 
 // https://math.stackexchange.com/a/606720
