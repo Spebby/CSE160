@@ -29,3 +29,6 @@ Additionally, some code, the polygon triangulation, is a bit beyond me at the
 moment. I asked Claude to help with the implementation, and gather sources. So,
 updateVerts, ensureCounterClockwise, triangulate, isEar, pointInTriangle are
 written with the assistance of generative AI.
+
+The line tool was designed after and is largely derivative of the polygon. As
+such it reuses some of the code written there.

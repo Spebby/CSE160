@@ -1,5 +1,5 @@
 // Asgn1.js
-import { Point, Triangle, Circle, Polygon } from './shapes.js';
+import { Point, Triangle, Circle, Polygon, Polyline } from './shapes.js';
 
 // ColoredPoint.js (c) 2012 matsuda
 // Vertex shader program
@@ -35,7 +35,8 @@ const Type = {
 	POINT: 0,
 	TRIANGLE : 1,
 	CIRCLE : 2,
-	POLYGON: 3,
+	POLYLINE : 3,
+	POLYGON: 4,
 };
 
 // HTML -> GLSL
@@ -45,7 +46,7 @@ let SIZE = 8;
 var shapeList = [];
 
 // Polygon Tool
-var previewPolygon = null;
+var previewPoly = null;
 var currPolyVerts = [];
 
 function main() {
@@ -101,6 +102,7 @@ function setupListeners() {
 	document.getElementById('mPoint').onclick   = function() { setPaintMode(); };
 	document.getElementById('mTri').onclick     = function() { setPaintMode(); };
 	document.getElementById('mCircle').onclick  = function() { setPaintMode(); };
+	document.getElementById('mPolyline').onclick    = function() { setPaintMode(); };
 	document.getElementById('mPolygon').onclick = function() { setPaintMode(); };
 	document.getElementById('mSpecial').onclick = function() { drawSpecial(); };
 	// TODO: 'game' button.
@@ -116,6 +118,7 @@ function setupListeners() {
 	document.getElementById('sSize').addEventListener('mouseup', function() { SIZE = this.value; });
 
 	document.getElementById('clearCanvas').addEventListener('click', clearCanvas);
+	document.getElementById('undo').addEventListener('click', undo);
 }
 
 function getMode() {
@@ -125,14 +128,44 @@ function getMode() {
 
 function setPaintMode() {
 	const TYPE = getMode();
+
+	// Arguably both of the polytools could probably be "merged" together
+	// such that their click & hover functions largely reuse code.
+	if (TYPE == Type.POLYLINE) {
+		canvas.onmousedown = function(env) { polylineClick(env) };
+		canvas.onmousemove = function(env) { polylineHover(env) };
+		canvas.oncontextmenu = function(env) {
+			env.preventDefault();
+			polylineFinish();
+			return false;
+		}
+
+		// if it already exists, we need to swap it to preview polyline
+		if (previewPoly) {
+			previewPoly = new Polyline([0, 0], [...COLOUR, 0.5], SIZE, currPolyVerts, false);
+			renderAllShapes();
+			previewPoly.render();
+			drawPolylineOutline(previewVerts);
+		}
+		return;
+	}
+
 	if (TYPE == Type.POLYGON) {
 		canvas.onmousedown = function(env) { polygonClick(env) };
 		canvas.onmousemove = function(env) { polygonHover(env) };
 		canvas.oncontextmenu = function (env) {
 			env.preventDefault();
-			finishPolygon();
+			polygonFinish();
 			return false;
 		};
+
+		// if it already exists, we need to swap it to preview polygon
+		if (previewPoly) {
+			previewPoly = new Polygon([0, 0], [...COLOUR, 0.5], SIZE, currPolyVerts);
+			renderAllShapes();
+			previewPoly.render();
+			drawPolygonOutline(previewVerts, true);
+		}
 		return;
 	}
 
@@ -141,7 +174,7 @@ function setPaintMode() {
 	canvas.onmousemove = function(env) { if(env.buttons == 1) click(env) };
 	canvas.oncontextmenu = null;
 	currPolyVerts = [];
-	previewPolygon = null;
+	previewPoly = null;
 }
 
 function screenSpaceToCanvasSpace(env) {
@@ -187,6 +220,11 @@ function clearCanvas() {
 	renderAllShapes();
 }
 
+function undo() {
+	shapeList.pop();
+	renderAllShapes();
+}
+
 function click(env) {
 	const [x, y] = screenSpaceToCanvasSpace(env);
 
@@ -218,7 +256,7 @@ function polygonClick(env) {
 		const fy = currPolyVerts[1];
 		const dist = Math.sqrt((x - fx) ** 2 + (y - fy) ** 2);
 		if (dist < POLY_CLOSE_THRES) {
-			finishPolygon();
+			polygonFinish();
 			return;
 		}
 	}
@@ -231,14 +269,14 @@ function polygonHover(env) {
 	if (currPolyVerts.length === 0) return;
 	const [x, y] = screenSpaceToCanvasSpace(env);
 	const previewVerts = [...currPolyVerts, x, y];
-	if (previewPolygon) {
-		previewPolygon.updateVertices(previewVerts);
+	if (previewPoly) {
+		previewPoly.updateVertices(previewVerts);
 	} else {
-		previewPolygon = new Polygon([0, 0], [...COLOUR, 0.5], SIZE, previewVerts);
+		previewPoly = new Polygon([0, 0], [...COLOUR, 0.5], SIZE, previewVerts);
 	}
 
 	renderAllShapes();
-	previewPolygon.render();
+	previewPoly.render();
 	drawPolygonOutline(previewVerts, true);
 }
 
@@ -266,14 +304,81 @@ function drawPolygonOutline(verts, includeClosing) {
 	}
 }
 
-function finishPolygon() {
+function polygonFinish() {
 	if (currPolyVerts.length >= 6) {
 		const shape = new Polygon([0, 0], COLOUR.slice(), SIZE, currPolyVerts.slice());
 		shapeList.push(shape);
 	}
 
 	currPolyVerts = [];
-	previewPolygon = null;
+	previewPoly = null;
+	renderAllShapes();
+}
+
+function polylineClick(env) {
+	if (getMode() != Type.POLYLINE) return;
+	const [x, y] = screenSpaceToCanvasSpace(env);
+	if (currPolyVerts.length >= 4) {
+		const fx = currPolyVerts[0];
+		const fy = currPolyVerts[1];
+		const dist = Math.sqrt((x - fx) ** 2 + (y - fy) ** 2);
+		// cheaper to convert w/ square dist, but this doesn't run often so idc
+
+		if (dist < POLY_CLOSE_THRES) {
+			polylineFinish(true);
+			return;
+		}
+
+		// or if we are very close to the most recent points...
+		const lx = currPolyVerts[currPolyVerts.length - 2];
+		const ly = currPolyVerts[currPolyVerts.length - 1];
+		const lDist = Math.sqrt((x - lx) ** 2 + (y - ly) ** 2);
+		if (lDist < POLY_CLOSE_THRES) {
+			polylineFinish();
+			return;
+		}
+	}
+
+	currPolyVerts.push(x, y);
+}
+
+function polylineHover(env) {
+	if (currPolyVerts.length === 0) return;
+	const [x, y] = screenSpaceToCanvasSpace(env);
+	const previewVerts = [...currPolyVerts, x, y];
+
+	if (previewPoly) {
+		previewPoly.updateVertices(previewVerts, false);
+	} else {
+		previewPoly = new Polyline([0, 0], [...COLOUR, 0.5], SIZE, previewVerts, false);
+	}
+
+	renderAllShapes();
+	previewPoly.render();
+	drawPolylineOutline(previewVerts);
+}
+
+function drawPolylineOutline(verts) {
+	for (let i = 0; i < verts.length; i += 2) {
+		const pt = new Point([verts[i], verts[i+1]], [1, 1, 1, 0.5], 5);
+		pt.render();
+	}
+
+	// Highlight first vertex if enough points to close
+	if (verts.length >= 4) {
+		const firstPt = new Point([verts[0], verts[1]], [0, 1, 0, 0.5], 8);
+		firstPt.render();
+	}
+}
+
+function polylineFinish(isClosed = false) {
+	if (currPolyVerts.length >= 4) { // At least 2 vertices
+		const shape = new Polyline([0, 0], COLOUR.slice(), SIZE, currPolyVerts.slice(), isClosed);
+		shapeList.push(shape);
+	}
+	
+	currPolyVerts = [];
+	previewPoly = null;
 	renderAllShapes();
 }
 
