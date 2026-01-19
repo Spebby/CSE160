@@ -382,5 +382,30 @@ function polylineFinish(isClosed = false) {
 	renderAllShapes();
 }
 
+// draw fellowship broach
+function drawSpecial() {
+	fetch("../assets/data/fellowshipbroach.json")
+		.then(res => res.json())
+		.then(data => {
+			for (const entry of data) {
+				const pos = entry.pos;
+				const colour = entry.colour;
+				const size = typeof entry.size === "string" ? parseInt(entry.size) : entry.size;
+				const verts = entry.verts.slice();
+		
+				if ("closed" in entry) {
+					const isClosed = entry.closed;
+					const shape = new Polyline(pos, colour.slice(), size, verts, isClosed);
+					shapeList.push(shape);
+				} else {
+					const shape = new Polygon(pos, colour.slice(), size, verts);
+					shapeList.push(shape);
+				}
+			}
+		}
+	).catch(err => console.error(err));
+	renderAllShapes();
+}
+
 // call on module load
 main();
