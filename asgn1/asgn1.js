@@ -28,8 +28,6 @@ var H;
 var HW;
 var HH;
 
-const POLY_CLOSE_THRES = 0.05;
-
 // :D
 const Type = {
 	POINT: 0,
@@ -46,6 +44,8 @@ let SIZE = 8;
 var shapeList = [];
 
 // Polygon Tool
+const POLY_CLOSE_THRES = 0.01;
+let POLY_CLOSE_MULT = 1;
 var previewPoly = null;
 var currPolyVerts = [];
 
@@ -68,6 +68,7 @@ function main() {
 
 	SEG  = Number(document.getElementById('cSeg').value);
 	SIZE = Number(document.getElementById('sSize').value);
+	POLY_CLOSE_MULT = Number(document.getElementById('pCloseMult').value);
 }
 
 function setupWebGL() {
@@ -99,13 +100,12 @@ function setupWebGL() {
 }
 
 function setupListeners() {
-	document.getElementById('mPoint').onclick   = function() { setPaintMode(); };
-	document.getElementById('mTri').onclick     = function() { setPaintMode(); };
-	document.getElementById('mCircle').onclick  = function() { setPaintMode(); };
-	document.getElementById('mPolyline').onclick    = function() { setPaintMode(); };
-	document.getElementById('mPolygon').onclick = function() { setPaintMode(); };
-	document.getElementById('mSpecial').onclick = function() { drawSpecial(); };
-	// TODO: 'game' button.
+	document.getElementById('mPoint').onclick    = function() { setPaintMode(); };
+	document.getElementById('mTri').onclick      = function() { setPaintMode(); };
+	document.getElementById('mCircle').onclick   = function() { setPaintMode(); };
+	document.getElementById('mPolyline').onclick = function() { setPaintMode(); };
+	document.getElementById('mPolygon').onclick  = function() { setPaintMode(); };
+	document.getElementById('mSpecial').onclick  = function() { drawSpecial(); };
 	
 	// RGBA
 	document.getElementById('cR').addEventListener('mouseup', function() { COLOUR[0] = this.value / 255.0; });
@@ -116,6 +116,7 @@ function setupListeners() {
 	// other options
 	document.getElementById('cSeg').addEventListener('mouseup', function() { SEG = this.value; });
 	document.getElementById('sSize').addEventListener('mouseup', function() { SIZE = this.value; });
+	document.getElementById('pCloseMult').addEventListener('mouseup', function() { POLY_CLOSE_MULT = this.value; });
 
 	document.getElementById('clearCanvas').addEventListener('click', clearCanvas);
 	document.getElementById('undo').addEventListener('click', undo);
@@ -142,7 +143,7 @@ function setPaintMode() {
 
 		// if it already exists, we need to swap it to preview polyline
 		if (previewPoly) {
-			previewPoly = new Polyline([0, 0], [...COLOUR, 0.5], SIZE, currPolyVerts, false);
+			previewPoly = new Polyline([0, 0], COLOUR, SIZE, currPolyVerts, false);
 			renderAllShapes();
 			previewPoly.render();
 			drawPolylineOutline(previewVerts);
@@ -161,7 +162,7 @@ function setPaintMode() {
 
 		// if it already exists, we need to swap it to preview polygon
 		if (previewPoly) {
-			previewPoly = new Polygon([0, 0], [...COLOUR, 0.5], SIZE, currPolyVerts);
+			previewPoly = new Polygon([0, 0], COLOUR, SIZE, currPolyVerts);
 			renderAllShapes();
 			previewPoly.render();
 			drawPolygonOutline(previewVerts, true);
@@ -215,6 +216,17 @@ function connectVariablesToGLSL() {
 	window.u_PointSize = tPs;
 }
 
+function renderAllShapes() {
+	gl.clear(gl.COLOR_BUFFER_BIT);
+	// shapeList.forEach(shape => shape?.render()); <- too slow
+
+	const shapes = shapeList;
+	for (let i = 0, n = shapes.length; i < n; i++) {
+		const shape = shapes[i];
+		if (shape) shape.render();
+	}
+}
+
 function clearCanvas() {
 	shapeList = [];
 	renderAllShapes();
@@ -255,7 +267,7 @@ function polygonClick(env) {
 		const fx = currPolyVerts[0];
 		const fy = currPolyVerts[1];
 		const dist = Math.sqrt((x - fx) ** 2 + (y - fy) ** 2);
-		if (dist < POLY_CLOSE_THRES) {
+		if (dist < POLY_CLOSE_THRES * POLY_CLOSE_MULT) {
 			polygonFinish();
 			return;
 		}
@@ -272,23 +284,12 @@ function polygonHover(env) {
 	if (previewPoly) {
 		previewPoly.updateVertices(previewVerts);
 	} else {
-		previewPoly = new Polygon([0, 0], [...COLOUR, 0.5], SIZE, previewVerts);
+		previewPoly = new Polygon([0, 0], COLOUR, SIZE, previewVerts);
 	}
 
 	renderAllShapes();
 	previewPoly.render();
 	drawPolygonOutline(previewVerts, true);
-}
-
-function renderAllShapes() {
-	gl.clear(gl.COLOR_BUFFER_BIT);
-	// shapeList.forEach(shape => shape?.render()); <- too slow
-
-	const shapes = shapeList;
-	for (let i = 0, n = shapes.length; i < n; i++) {
-		const shape = shapes[i];
-		if (shape) shape.render();
-	}
 }
 
 // Polygon Draw
@@ -324,7 +325,7 @@ function polylineClick(env) {
 		const dist = Math.sqrt((x - fx) ** 2 + (y - fy) ** 2);
 		// cheaper to convert w/ square dist, but this doesn't run often so idc
 
-		if (dist < POLY_CLOSE_THRES) {
+		if (dist < POLY_CLOSE_THRES * POLY_CLOSE_MULT) {
 			polylineFinish(true);
 			return;
 		}
@@ -333,7 +334,7 @@ function polylineClick(env) {
 		const lx = currPolyVerts[currPolyVerts.length - 2];
 		const ly = currPolyVerts[currPolyVerts.length - 1];
 		const lDist = Math.sqrt((x - lx) ** 2 + (y - ly) ** 2);
-		if (lDist < POLY_CLOSE_THRES) {
+		if (lDist < POLY_CLOSE_THRES * POLY_CLOSE_MULT) {
 			polylineFinish();
 			return;
 		}
@@ -350,7 +351,7 @@ function polylineHover(env) {
 	if (previewPoly) {
 		previewPoly.updateVertices(previewVerts, false);
 	} else {
-		previewPoly = new Polyline([0, 0], [...COLOUR, 0.5], SIZE, previewVerts, false);
+		previewPoly = new Polyline([0, 0], COLOUR, SIZE, previewVerts, false);
 	}
 
 	renderAllShapes();
@@ -391,14 +392,21 @@ function drawSpecial() {
 				const pos = entry.pos;
 				const colour = entry.colour;
 				const size = typeof entry.size === "string" ? parseInt(entry.size) : entry.size;
-				const verts = entry.verts.slice();
 		
+				if ("segments" in entry) {
+					const seg = entry.segments;
+					const shape = new Circle(pos, colour, size, seg)
+					shapeList.push(shape);
+					continue;
+				}
+
+				const verts = entry.verts.slice();
 				if ("closed" in entry) {
 					const isClosed = entry.closed;
-					const shape = new Polyline(pos, colour.slice(), size, verts, isClosed);
+					const shape = new Polyline(pos, colour, size, verts, isClosed);
 					shapeList.push(shape);
 				} else {
-					const shape = new Polygon(pos, colour.slice(), size, verts);
+					const shape = new Polygon(pos, colour, size, verts);
 					shapeList.push(shape);
 				}
 			}

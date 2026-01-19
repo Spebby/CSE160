@@ -135,35 +135,36 @@ export class Polyline extends Shape {
 		const thickness = this.size / window.gl.canvas.width;
 		const numVerts = verts.length / 2;
 
-		// calc perp offsets for each vertex
-		// this code is pretty long & ugly since we need to handle open/closed
-		// lines differently.
+		// this code is pretty long & ugly
+		// since we need to handle open/closed lines differently.
+		// The gist is, for each vertex, we look at the two segments it
+		// connects (in, out), and average their perpendicular directions.
 		const offsets = [];
 		for (let i = 0; i < numVerts; i++) {
 			const prevIdx = closed ? (i - 1 + numVerts) % numVerts : Math.max(0, i - 1);
 			const nextIdx = closed ? (i + 1) % numVerts : Math.min(numVerts - 1, i + 1);
 			
-			// Get three points
+			// get the 3 relevant points (prev, shared, next)
 			const x0 = verts[prevIdx * 2], y0 = verts[prevIdx * 2 + 1];
 			const x1 = verts[i * 2], y1 = verts[i * 2 + 1];
 			const x2 = verts[nextIdx * 2], y2 = verts[nextIdx * 2 + 1];
 			
-			// Calculate averaged perpendicular
+			// perp to incoming segment
 			let px = 0, py = 0;
-			
 			if (i > 0 || closed) {
 				const dx1 = x1 - x0, dy1 = y1 - y0;
 				const len1 = Math.sqrt(dx1 * dx1 + dy1 * dy1);
 				if (len1 > 0) { px -= dy1 / len1; py += dx1 / len1; }
 			}
 			
+			// perp to outgoing segment
 			if (i < numVerts - 1 || closed) {
 				const dx2 = x2 - x1, dy2 = y2 - y1;
 				const len2 = Math.sqrt(dx2 * dx2 + dy2 * dy2);
 				if (len2 > 0) { px -= dy2 / len2; py += dx2 / len2; }
 			}
 			
-			// Normalize
+			// normalise
 			const plen = Math.sqrt(px * px + py * py);
 			if (plen > 0) { px /= plen; py /= plen; }
 			

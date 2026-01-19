@@ -38,4 +38,6 @@ updateVerts, ensureCounterClockwise, triangulate, isEar, pointInTriangle are
 written with the assistance of generative AI.
 
 The line tool was designed after and is largely derivative of the polygon. As
-such it reuses some of the code written there.
+such it reuses some of the code written there. The perp offset block was written
+with the assistance of Claude as well, as my attempts at connecting the verts
+were pretty ugly.
