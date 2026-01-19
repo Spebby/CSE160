@@ -1,5 +1,5 @@
 // Asgn1.js
-import { Circle, Triangle, Point } from './shapes.js';
+import { Point, Triangle, Circle, Polygon } from './shapes.js';
 
 // ColoredPoint.js (c) 2012 matsuda
 // Vertex shader program
@@ -28,20 +28,25 @@ var H;
 var HW;
 var HH;
 
+const POLY_CLOSE_THRES = 0.05;
+
 // :D
 const Type = {
 	POINT: 0,
 	TRIANGLE : 1,
 	CIRCLE : 2,
-	SPECIAL : 3
+	POLYGON: 3,
 };
 
 // HTML -> GLSL
-let TYPE = Type.POINT;
 let COLOUR = [1.0, 1.0, 1.0, 1.0];
 let SEG = 8;
 let SIZE = 8;
 var shapeList = [];
+
+// Polygon Tool
+var previewPolygon = null;
+var currPolyVerts = [];
 
 function main() {
 	setupWebGL();
@@ -52,6 +57,16 @@ function main() {
 	gl.clearColor(0.0, 0.0, 0.0, 1.0);
 	gl.clear(gl.COLOR_BUFFER_BIT);
 	clearCanvas();
+
+	// TODO: when site reloads, it keeps previous page's settings.
+	// make sure to either reset HTML, or pull at init.
+	COLOUR[0] = document.getElementById('cR').value / 255.0;
+	COLOUR[1] = document.getElementById('cG').value / 255.0;
+	COLOUR[2] = document.getElementById('cB').value / 255.0;
+	COLOUR[3] = document.getElementById('cA').value / 255.0;
+
+	SEG  = Number(document.getElementById('cSeg').value);
+	SIZE = Number(document.getElementById('sSize').value);
 }
 
 function setupWebGL() {
@@ -79,15 +94,15 @@ function setupWebGL() {
 	gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
 	window.gl = gl;
-
 	setPaintMode();
 }
 
 function setupListeners() {
-	document.getElementById('mPoint').onclick = function() { TYPE = Type.POINT; setPaintMode(); };
-	document.getElementById('mTri').onclick = function() { TYPE = Type.TRIANGLE; setPaintMode(); };
-	document.getElementById('mCircle').onclick = function() { TYPE = Type.CIRCLE; setPaintMode(); };
-	document.getElementById('mSpecial').onclick = function() { drawSpecial(); TYPE = Type.SPECIAL; setPaintMode(); };
+	document.getElementById('mPoint').onclick   = function() { setPaintMode(); };
+	document.getElementById('mTri').onclick     = function() { setPaintMode(); };
+	document.getElementById('mCircle').onclick  = function() { setPaintMode(); };
+	document.getElementById('mPolygon').onclick = function() { setPaintMode(); };
+	document.getElementById('mSpecial').onclick = function() { drawSpecial(); };
 	// TODO: 'game' button.
 	
 	// RGBA
@@ -103,16 +118,30 @@ function setupListeners() {
 	document.getElementById('clearCanvas').addEventListener('click', clearCanvas);
 }
 
+function getMode() {
+	const checked = document.querySelector('#drawingMode input[name="mode"]:checked');
+	return checked ? Type[checked.value] : null;
+}
+
 function setPaintMode() {
-	if (TYPE == Type.SPECIAL) {
-		canvas.onmousedown = null;
-		canvas.onmousemove = null;
+	const TYPE = getMode();
+	if (TYPE == Type.POLYGON) {
+		canvas.onmousedown = function(env) { polygonClick(env) };
+		canvas.onmousemove = function(env) { polygonHover(env) };
+		canvas.oncontextmenu = function (env) {
+			env.preventDefault();
+			finishPolygon();
+			return false;
+		};
 		return;
 	}
 
 	// standard
 	canvas.onmousedown = function(env) { click(env) };
 	canvas.onmousemove = function(env) { if(env.buttons == 1) click(env) };
+	canvas.oncontextmenu = null;
+	currPolyVerts = [];
+	previewPolygon = null;
 }
 
 function screenSpaceToCanvasSpace(env) {
@@ -159,11 +188,10 @@ function clearCanvas() {
 }
 
 function click(env) {
-	if (TYPE == Type.SPECIAL) return;
 	const [x, y] = screenSpaceToCanvasSpace(env);
 
 	let shape;
-	switch (TYPE) {
+	switch (getMode()) {
 		case Type.POINT:
 			shape = new Point([x, y].slice(), COLOUR.slice(), SIZE);
 			break;
@@ -181,6 +209,39 @@ function click(env) {
 	renderAllShapes();
 }
 
+function polygonClick(env) {
+	if (getMode() != Type.POLYGON) return;
+	const [x, y] = screenSpaceToCanvasSpace(env);
+
+	if (currPolyVerts.length >= 6) { // at least a triangle
+		const fx = currPolyVerts[0];
+		const fy = currPolyVerts[1];
+		const dist = Math.sqrt((x - fx) ** 2 + (y - fy) ** 2);
+		if (dist < POLY_CLOSE_THRES) {
+			finishPolygon();
+			return;
+		}
+	}
+
+	currPolyVerts.push(x, y);
+	drawPolygonOutline(currPolyVerts, false);
+}
+
+function polygonHover(env) {
+	if (currPolyVerts.length === 0) return;
+	const [x, y] = screenSpaceToCanvasSpace(env);
+	const previewVerts = [...currPolyVerts, x, y];
+	if (previewPolygon) {
+		previewPolygon.updateVertices(previewVerts);
+	} else {
+		previewPolygon = new Polygon([0, 0], [...COLOUR, 0.5], SIZE, previewVerts);
+	}
+
+	renderAllShapes();
+	previewPolygon.render();
+	drawPolygonOutline(previewVerts, true);
+}
+
 function renderAllShapes() {
 	gl.clear(gl.COLOR_BUFFER_BIT);
 	// shapeList.forEach(shape => shape?.render()); <- too slow
@@ -190,6 +251,30 @@ function renderAllShapes() {
 		const shape = shapes[i];
 		if (shape) shape.render();
 	}
+}
+
+// Polygon Draw
+function drawPolygonOutline(verts, includeClosing) {
+	for (let i = 0; i < verts.length; i += 2) {
+		const pt = new Point([verts[i], verts[i+1]], [1, 1, 1, 0.5], 5);
+		pt.render();
+	}
+
+	if (verts.length >= 6) {
+		const firstPt = new Point([verts[0], verts[1]], [0, 1, 0, 0.5], 8);
+		firstPt.render();
+	}
+}
+
+function finishPolygon() {
+	if (currPolyVerts.length >= 6) {
+		const shape = new Polygon([0, 0], COLOUR.slice(), SIZE, currPolyVerts.slice());
+		shapeList.push(shape);
+	}
+
+	currPolyVerts = [];
+	previewPolygon = null;
+	renderAllShapes();
 }
 
 // call on module load

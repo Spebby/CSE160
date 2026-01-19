@@ -8,6 +8,11 @@ This code uses code from Matsuda & Lea's ColoredPoint.js example from the "WebGL
 Programming Guide". Found in
 [Chapter 2](https://sites.google.com/site/webglbook/home/chapter-2/) section 5.
 
+The drawing button produces an image I drew. The weekend I programmed this
+coincided with the 25th anniversary of the LOTR films, and I was lucky enough to
+watch all of them in theatres as a part of the special rerun.
+![fellowship pin](fellowship.jpg)
+
 ## Gen AI Acknowledgment
 
 Generative AI was used in generating the HTML for the website. I provided a
@@ -18,4 +23,9 @@ some manual direction. This screenshot included a "clear canvas" button,
 sliders. I wired it up manually, and added additional content not in the
 original image.
 
-![gif](Assignment1_Animation.gif)
+![Original Image gif](Assignment1_Animation.gif)
+
+Additionally, some code, the polygon triangulation, is a bit beyond me at the
+moment. I asked Claude to help with the implementation, and gather sources. So,
+updateVerts, ensureCounterClockwise, triangulate, isEar, pointInTriangle are
+written with the assistance of generative AI.

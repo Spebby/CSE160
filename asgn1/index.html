@@ -34,15 +34,18 @@ redirect_from:
 			<div class="mb-4">
 				<label class="form-label fw-semibold d-block">Drawing Mode:</label>
 				<div id="drawingMode" class="btn-group" role="group" aria-label="Drawing mode">
-					<input type="radio" class="btn-check" name="mode" id="mPoint" value="squares" checked>
+					<input type="radio" class="btn-check" name="mode" id="mPoint"   value="POINT" checked>
 					<label class="btn btn-outline-primary" for="mPoint">Points</label>
-					<input type="radio" class="btn-check" name="mode" id="mTri" value="triangles">
+					<input type="radio" class="btn-check" name="mode" id="mTri"     value="TRIANGLE">
 					<label class="btn btn-outline-primary" for="mTri">Triangles</label>
-					<input type="radio" class="btn-check" name="mode" id="mCircle" value="circles">
+					<input type="radio" class="btn-check" name="mode" id="mCircle"  value="CIRCLE">
 					<label class="btn btn-outline-primary" for="mCircle">Circles</label>
-					<input type="radio" class="btn-check" name="mode" id="mSpecial" value="circles">
-					<label class="btn btn-outline-primary" for="mSpecial">???</label>
+					<input type="radio" class="btn-check" name="mode" id="mPolygon" value="POLYGON">
+					<label class="btn btn-outline-primary" for="mPolygon">Polygon</label>
+
+					<button type="button" id="mSpecial" class="btn btn-outline-secondary">Drawing</button>
 				</div>
+
 			</div>
 
 			<!-- Shape Colour -->
