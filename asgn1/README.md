@@ -13,6 +13,13 @@ coincided with the 25th anniversary of the LOTR films, and I was lucky enough to
 watch all of them in theatres as a part of the special rerun.
 ![fellowship pin](fellowship.jpg)
 
+The drawing is stored in JSON at `../assets/data/fellowshipbroach.json`. This is
+then parsed at runtime to construct the broach from the polygon and polyline
+tools. When I was originally sketching the shape, I layered a piece of paper
+over my screen and drew under it, using the paper as a guide. So, I thought it
+was more impressive to show that it _is_ possible to draw complicated shapes w/
+the tools I wrote, rather than hardcoding special shapes as needed.
+
 ## Gen AI Acknowledgment
 
 Generative AI was used in generating the HTML for the website. I provided a

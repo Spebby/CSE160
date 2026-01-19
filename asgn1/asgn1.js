@@ -402,9 +402,9 @@ function drawSpecial() {
 					shapeList.push(shape);
 				}
 			}
+			renderAllShapes();
 		}
 	).catch(err => console.error(err));
-	renderAllShapes();
 }
 
 // call on module load
