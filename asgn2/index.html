@@ -1,0 +1,112 @@
+---
+title: Block Animals
+permalink: /asgn2/
+redirect_from:
+  - /Asgn2/
+  - /a2/
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>{{ page.title }}</title>
+	{% include og-meta.html %}
+	{% include common-head.html %}
+</head>
+<body data-bs-theme="dark" class="bg text-light py-4">
+	<div class="container">
+		<!-- Canvas -->
+		<div class="text-center mb-4">
+		<canvas id="webgl" width="600" height="600" style="position: relative; z-index: 1; pointer-events: auto; border: 1px solid #0d6efd; background-color: #000;">
+			Your browser does not support the canvas element.
+		</canvas>
+
+	<div class="card shadow-sm">
+		<div class="card-body">
+			<!-- Clear -->
+			<div class="mb-3">
+				<button id="clearCanvas" class="btn btn-outline-secondary btn-sm" type="button">Clear Canvas</button>
+				<button id="undo" class="btn btn-outline-secondary btn-sm" type="button">Undo</button>
+			</div>
+
+			<!-- Drawing Mode -->
+			<div class="mb-4">
+				<label class="form-label fw-semibold d-block">Drawing Mode:</label>
+				<div id="drawingMode" class="btn-group" role="group" aria-label="Drawing mode">
+					<input type="radio" class="btn-check" name="mode" id="mPoint"   value="POINT" checked>
+					<label class="btn btn-outline-primary" for="mPoint">Points</label>
+					<input type="radio" class="btn-check" name="mode" id="mTri"     value="TRIANGLE">
+					<label class="btn btn-outline-primary" for="mTri">Triangles</label>
+					<input type="radio" class="btn-check" name="mode" id="mCircle"  value="CIRCLE">
+					<label class="btn btn-outline-primary" for="mCircle">Circles</label>
+					<input type="radio" class="btn-check" name="mode" id="mPolyline" value="POLYLINE">
+					<label class="btn btn-outline-primary" for="mPolyline">Polyline</label>
+					<input type="radio" class="btn-check" name="mode" id="mPolygon" value="POLYGON">
+					<label class="btn btn-outline-primary" for="mPolygon">Polygon</label>
+
+					<button type="button" id="mSpecial" class="btn btn-outline-secondary">Drawing</button>
+				</div>
+
+			</div>
+
+			<!-- Shape Colour -->
+			<div class="mb-4">
+				<label class="form-label fw-semibold">Shape Colour:</label>
+				<div class="row row-cols-2 row-cols-md-4 g-4 align-items-center">
+					<div class="col-md-3">
+						<label for="cR" class="form-label">Red</label>
+						<input type="range" class="form-range" id="cR" min="0" max="255" value="255">
+					</div>
+
+					<div class="col-md-3">
+						<label for="cG" class="form-label">Green</label>
+						<input type="range" class="form-range" id="cG" min="0" max="255" value="255">
+					</div>
+
+					<div class="col-md-3">
+						<label for="cB" class="form-label">Blue</label>
+						<input type="range" class="form-range" id="cB" min="0" max="255" value="255">
+					</div>
+
+					<div class="col-md-3">
+						<label for="cA" class="form-label">Alpha</label>
+						<input type="range" class="form-range" id="cA" min="0" max="255" value="255">
+					</div>
+				</div>
+			</div>
+
+			<!-- Size / Segment Count -->
+			<div class="mb-4 al">
+				<label class="form-label fw-semibold">Misc Options:</label>
+				<div class="row g-4 align-items-center">
+					<div class="col-md-6">
+						<label for="sSize" class="form-label fw-semibold">Shape Size:</label>
+						<input type="range" class="form-range" id="sSize" min="1" max="100" value="25">
+					</div>
+
+					<div class="col-md-6">
+						<label for="cSeg" class="form-label fw-semibold">(Circles) Segment Count:</label>
+						<input type="range" class="form-range" id="cSeg" min="3" max="64" value="16">
+					</div>
+					<div class="col-md-3">
+						<label for="cSeg" class="form-label fw-semibold">Poly Close Dist:</label>
+						<input type="range" class="form-range" id="pCloseMult" min="1" max="5" value="1">
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	</div>
+
+	<a href="Fellowship.jpg">Drawing Source</a>
+
+	<!--Bootstrapping-->
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+	<script type="module" src="asgn2.js"></script>
+	<script src="../assets/lib/cuon-utils.js"></script>
+	<script src="../assets/lib/webgl-utils.js"></script>
+	<script src="../assets/lib/webgl-debug.js"></script>
+</body>
+</html>
