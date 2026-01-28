@@ -1,18 +1,16 @@
 // Asgn2.js
 import { Cube } from './shapes.js';
 
-// ColoredPoint.js (c) 2012 matsuda
 // Vertex shader program
 var VSHADER_SOURCE =
 	`attribute vec4 a_Position;
-
-	uniform mat4 u_LocalMatrix;
+	uniform mat4 u_ModelMatrix;
 	uniform mat4 u_GlobalRotation;
+	uniform mat4 u_ProjectionMatrix;
 
-
-	// consider normal stuff
+	// consider normal stuff for lighting
 	void main() {
-		gl_PointSize = u_GlobalRotation * u_LocalMatrix * a_Position;
+		gl_Position = u_ProjectionMatrix * u_GlobalRotation * u_ModelMatrix * a_Position;
 	}`;
 
 // Fragment shader program
@@ -31,9 +29,11 @@ var W;
 var H;
 var HW;
 var HH;
+var TIME;
+var START_TIME = performance.now() / 1000.0;
 
-// HTML -> GLSL
-let COLOUR = [1.0, 1.0, 1.0, 1.0];
+var FOV = 70;
+var oDist = 5;
 
 function main() {
 	setupWebGL();
@@ -43,7 +43,6 @@ function main() {
 	// clear colour
 	gl.clearColor(0.0, 0.0, 0.0, 1.0);
 	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-	clearCanvas();
 
 	canvas.addEventListener('contextmenu', function(env) {
 		if (env.buttons == 2) {
@@ -55,6 +54,12 @@ function main() {
 	canvas.addEventListener('mousedown', function(env) {
 		
 	});
+
+	FOV = document.getElementById('FOV').value;
+	oDist = document.getElementById('oDist').value;
+
+	resizeCanvas();
+	requestAnimationFrame(tick);
 }
 
 function setupWebGL() {
@@ -63,11 +68,6 @@ function setupWebGL() {
 		console.log('Failed to retrieve the <canvas> element');
 		return;
 	}
-
-	W = canvas.width;
-	H = canvas.height;
-	HW = W / 2;
-	HH = H / 2;
 
 	// Get the rendering context for 2DCG <- (2)
 	// suggested by vid 1.8
@@ -83,30 +83,32 @@ function setupWebGL() {
 	gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
 	window.gl = gl;
-	setPaintMode();
+	window.addEventListener('resize', resizeCanvas);
 }
 
 function setupListeners() {
-	document.getElementById('mPoint').onclick    = function() { setPaintMode(); };
-	document.getElementById('mTri').onclick      = function() { setPaintMode(); };
-	document.getElementById('mCircle').onclick   = function() { setPaintMode(); };
-	document.getElementById('mPolyline').onclick = function() { setPaintMode(); };
-	document.getElementById('mPolygon').onclick  = function() { setPaintMode(); };
-	document.getElementById('mSpecial').onclick  = function() { drawSpecial(); };
-	
-	// RGBA
-	document.getElementById('cR').addEventListener('mouseup', function() { COLOUR[0] = this.value / 255.0; });
-	document.getElementById('cG').addEventListener('mouseup', function() { COLOUR[1] = this.value / 255.0; });
-	document.getElementById('cB').addEventListener('mouseup', function() { COLOUR[2] = this.value / 255.0; });
-	document.getElementById('cA').addEventListener('mouseup', function() { COLOUR[3] = this.value / 255.0; });
+	document.getElementById('toggleCameraMode').addEventListener('click', toggleCameraMode);
+	document.getElementById('FOV').addEventListener('input', function() { FOV = this.value; updateProjMatrix(); });
+	document.getElementById('oDist').addEventListener('input', function() { oDist = this.value; });
 
-	// other options
-	document.getElementById('cSeg').addEventListener('mouseup', function() { SEG = this.value; });
-	document.getElementById('sSize').addEventListener('mouseup', function() { SIZE = this.value; });
-	document.getElementById('pCloseMult').addEventListener('mouseup', function() { POLY_CLOSE_MULT = this.value; });
+	/*
+	document.getElementById('mPoint').onclick    = function() { return; };
+	document.getElementById('mTri').onclick      = function() { return; };
+	document.getElementById('mCircle').onclick   = function() { return; };
+
+	// RGBA
+	document.getElementById('cR').addEventListener('mouseup', function() { return; });
+	document.getElementById('cG').addEventListener('mouseup', function() { return; });
+	document.getElementById('cB').addEventListener('mouseup', function() { return; });
+	document.getElementById('cA').addEventListener('mouseup', function() { return; });
 
 	document.getElementById('clearCanvas').addEventListener('click', clearCanvas);
 	document.getElementById('undo').addEventListener('click', undo);
+	*/
+}
+
+function toggleCameraMode() {
+	return;
 }
 
 function screenSpaceToCanvasSpace(env) {
@@ -139,28 +141,88 @@ function connectVariablesToGLSL() {
 		return;
 	}
 	window.u_FragColor = tCol;
+
+	let tMod = gl.getUniformLocation(gl.program, 'u_ModelMatrix');
+	if (!tMod) {
+		console.log('Failed to get storage location of u_ModelMatrix');
+		return;
+	}
+	window.u_ModelMatrix = tMod;
+	var identityMatrix = new Matrix4();
+	gl.uniformMatrix4fv(window.u_ModelMatrix, false, identityMatrix.elements);
+
+	let tGol = gl.getUniformLocation(gl.program, 'u_GlobalRotation');
+	if (!tGol) {
+		console.log('Failed to get storage location of u_GlobalRotation');
+		return;
+	}
+	window.u_GlobalRotation = tGol;
+	var globalRotation = new Matrix4();
+	globalRotation.setIdentity();
+	gl.uniformMatrix4fv(window.u_GlobalRotation, false, globalRotation.elements);
+
+
+	let tProj = gl.getUniformLocation(gl.program, 'u_ProjectionMatrix');
+	if (!tProj) {
+		console.log('Failed to get storage location of u_ProjectionMatrix');
+		return;
+	}
+	window.u_ProjectionMatrix = tProj;
 }
 
 function click(env) {
 	const [x, y] = screenSpaceToCanvasSpace(env);
 
-	let shape;
-	switch (getMode()) {
-		case Type.POINT:
-			shape = new Point([x, y].slice(), COLOUR.slice(), SIZE);
-			break;
-		case Type.TRIANGLE:
-			shape = new Triangle([x, y].slice(), COLOUR.slice(), SIZE);
-			break;
-		case Type.CIRCLE:
-			shape = new Circle([x, y].slice(), COLOUR.slice(), SIZE, SEG);
-			break;
-		default:
-			return;
-	}
 
-	shapeList.push(shape);
+}
+
+function tick() {
 	renderAllShapes();
+	requestAnimationFrame(tick);
+}
+
+function renderAllShapes() {
+	const now = performance.now();
+	const nowSeconds = now / 1000;
+	TIME = nowSeconds;
+	const frameTime = now - START_TIME;
+
+	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+	
+	var body = new Cube([0, 0].slice(), [1.0, 0.0, 0.0, 1.0].slice(), new Matrix4().setIdentity());
+	body.matrix.scale(1, 1, 1);
+	body.matrix.translate(0, 0, -5);
+	body.matrix.rotate(45, 0, 0, 1);
+	body.render();
+
+	//writeToLog("ms: " + frameTime.toFixed(2) + " fps: " + (1000/frameTime).toFixed(2));
+
+	START_TIME = now;
+}
+
+function resizeCanvas() {
+	const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    
+    // Set the internal resolution (accounting for high-DPI displays)
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    
+    W = canvas.width;
+    H = canvas.height;
+    HW = W / 2;
+    HH = H / 2;
+    
+    gl.viewport(0, 0, canvas.width, canvas.height);
+	
+	updateProjMatrix();
+}
+
+function updateProjMatrix() {
+	var projMatrix = new Matrix4();
+	var aspect = W / H;
+	projMatrix.setPerspective(FOV, aspect, 0.05, 100);
+	gl.uniformMatrix4fv(window.u_ProjectionMatrix, false, projMatrix.elements);
 }
 
 // call on module load
