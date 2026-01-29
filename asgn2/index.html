@@ -31,6 +31,7 @@ redirect_from:
 		<!-- Controls Card -->
 		<div class="card shadow-sm">
 			<div class="card-body">
+				<p id="profMeasure"></p>
 				<!-- Clear -->
 				<div class="mb-3">
 					<button id="clearCanvas" class="btn btn-outline-secondary btn-sm" type="button">Clear Canvas</button>
@@ -45,7 +46,6 @@ redirect_from:
 				<!-- Camera Settings -->
 				<div class="mb-4">
 					<label class="form-label fw-semibold">Camera Settings:</label>
-
 					<div class="row row-cols-2 row-cols-md-4 g-4 align-items-center">
 						<div id="camMode" class="btn-group" role="group" aria-label="Camera Mode">
 							<input type="radio" class="btn-check" name="mode" id="mTrack" value="TRACK">
@@ -54,6 +54,7 @@ redirect_from:
 							<label class="btn btn-outline-primary" for="mFree">Free</label>
 							<input type="radio" class="btn-check" name="mode" id="mOrbit" value="ORBIT" checked>
 							<label class="btn btn-outline-primary" for="mOrbit">Orbit</label>
+							<button id="mPause" class="btn btn-outline-primary" style="min-width: 95px;">Pause</button>
 						</div>
 
 						<div class="col-md-3">

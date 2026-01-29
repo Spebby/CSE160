@@ -32,7 +32,8 @@ var HH;
 var TIME;
 var START_TIME = performance.now() / 1000.0;
 
-var FOV = 70;
+var FOV;
+var IS_PAUSED;
 
 // Pitch, Yaw
 const CameraMode = {
@@ -64,6 +65,7 @@ function main() {
 	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
 	FOV = document.getElementById('FOV').value;
+	IS_PAUSED = document.getElementById('mPause').textContent !== 'Pause';
 
 	resizeCanvas();
 	requestAnimationFrame(tick);
@@ -88,32 +90,34 @@ function setupWebGL() {
 	gl.enable(gl.CULL_FACE);
 	gl.cullFace(gl.BACK);
     gl.enable(gl.DEPTH_TEST);
-	gl.enable(gl.BLEND);
-	gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+	//gl.enable(gl.BLEND);
+	//gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
 	window.gl = gl;
 	window.addEventListener('resize', resizeCanvas);
-	setCameraMode();
 }
 
 function setupListeners() {
 	document.getElementById('FOV').addEventListener('input', function() { FOV = this.value; updateProjMatrix(); });
-	document.getElementById('mOrbit').onclick = function() { setCameraMode(); };
-	document.getElementById('mFree').onclick  = function() { setCameraMode(); };
-	document.getElementById('mTrack').onclick = function() { setCameraMode(); };
+	document.getElementById('mTrack').addEventListener('mouseup', function() {
+		// TODO: convert coordinate system from spherical to cartesian
+		
+		return;
+		// wait for next frame to update camera
+	});
+
+	let pauseButton = document.getElementById('mPause');
+	pauseButton.addEventListener('click', function() {
+		IS_PAUSED = !IS_PAUSED;
+		pauseButton.textContent = IS_PAUSED ? 'Unpause' : 'Pause';
+		pauseButton.classList.remove('btn-warning');
+		if (IS_PAUSED) {
+			pauseButton.classList.add('btn-warning');
+		}
+	});
 	/*
-	document.getElementById('mPoint').onclick    = function() { return; };
-	document.getElementById('mTri').onclick      = function() { return; };
-	document.getElementById('mCircle').onclick   = function() { return; };
-
-	// RGBA
 	document.getElementById('cR').addEventListener('mouseup', function() { return; });
-	document.getElementById('cG').addEventListener('mouseup', function() { return; });
-	document.getElementById('cB').addEventListener('mouseup', function() { return; });
-	document.getElementById('cA').addEventListener('mouseup', function() { return; });
-
 	document.getElementById('clearCanvas').addEventListener('click', clearCanvas);
-	document.getElementById('undo').addEventListener('click', undo);
 	*/
 
 	// camera controls
@@ -183,20 +187,6 @@ function getMode() {
 	return checked ? CameraMode[checked.value] : null;
 }
 
-// this function honestly might be unnecessary since we'll probably want to update
-// camera state every frame for tracking camera, so just decide then.
-function setCameraMode() {
-	const MODE = getMode();
-
-	if (MODE == CameraMode.TRACK) {
-		cameraTargetX = 0;
-		cameraTargetY = 0;
-		cameraTargetZ = 0;
-	}
-
-	return;
-}
-
 function screenSpaceToCanvasSpace(env) {
 	var x = env.clientX;
 	var y = env.clientY;
@@ -263,9 +253,16 @@ function click(env) {
 }
 
 function tick() {
+	// TODO: separate sim time from fps.
+
 	updateCamera();
+	dispatchAnimations();
 	renderAllShapes();
 	requestAnimationFrame(tick);
+}
+
+function dispatchAnimations() {
+	if (IS_PAUSED) return;
 }
 
 function renderAllShapes() {
@@ -286,20 +283,37 @@ function renderAllShapes() {
 	cyl.matrix.translate(-1, 0, 0);
 	cyl.render();
 
-	//writeToLog("ms: " + frameTime.toFixed(2) + " fps: " + (1000/frameTime).toFixed(2));
+	writeToHTML(`ms: ${frameTime.toFixed(2)} fps: ${(1000/frameTime).toFixed(2)}`, "profMeasure");
 
 	START_TIME = now;
 }
 
 function updateCamera() {
-	/* Non-orbital mode
-	// Set up orbital camera (view matrix)
-    var viewMatrix = new Matrix4();
-    viewMatrix.setRotate(cameraAngleX, 1, 0, 0);  // Pitch
-    viewMatrix.rotate(cameraAngleY, 0, 1, 0);      // Yaw
-    viewMatrix.translate(0, 0, -cameraDistance);   // Move back
-    gl.uniformMatrix4fv(window.u_GlobalRotation, false, viewMatrix.elements);
-	*/
+	const MODE = getMode();
+
+	// This sucks currently since cameraAngleX does not cleanly map to cartesian cords.
+	// so there needs to be a conversion step to smooth this.
+	if (MODE == CameraMode.FREE) {
+		var viewMatrix = new Matrix4();
+		viewMatrix.setRotate(cameraAngleX, 1, 0, 0);   // Pitch
+		viewMatrix.rotate(cameraAngleY, 0, 1, 0);      // Yaw
+		viewMatrix.translate(0, 0, -cameraDistance);   // Move back
+		gl.uniformMatrix4fv(window.u_GlobalRotation, false, viewMatrix.elements);
+		return;
+
+		// TODO: some kind of forward movement options
+	};
+
+	// orbital & tracking act the same
+
+	// TODO: for tracking, override cameraTarget to target
+	if (MODE == CameraMode.TRACK) {
+		const SMOOTH = 0.1;
+		cameraTargetX += (0 - cameraTargetX) * SMOOTH;
+		cameraTargetY += (0 - cameraTargetY) * SMOOTH;
+		cameraTargetZ += (0 - cameraTargetZ) * SMOOTH;
+		isPanning = false; // jank but acceptable
+	}
 
 	// Orbital camera
     const radX = cameraAngleX * Math.PI / 180;
@@ -321,6 +335,7 @@ function updateCamera() {
 }
 
 function resizeCanvas() {
+	// TODO: add dpr slider
 	const rect = canvas.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
     
@@ -343,6 +358,18 @@ function updateProjMatrix() {
 	var aspect = W / H;
 	projMatrix.setPerspective(FOV, aspect, 0.05, 100);
 	gl.uniformMatrix4fv(window.u_ProjectionMatrix, false, projMatrix.elements);
+}
+
+function writeToHTML(str, id) {
+	const element = document.getElementById(id);
+	element.textContent = str;
+
+	if (str === "") {
+		element.classList.add('hidden');
+		return;
+	}
+
+	element.classList.remove('hidden');
 }
 
 // call on module load
