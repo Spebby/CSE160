@@ -31,16 +31,14 @@ redirect_from:
 		<!-- Controls Card -->
 		<div class="card shadow-sm">
 			<div class="card-body">
-				<p id="profMeasure"></p>
+				<span class="d-flex gap-2">
+					<p id="profMeasure"></p>
+					<p id="resMeasure"></p>
+				</span>
 				<!-- Clear -->
 				<div class="mb-3">
 					<button id="clearCanvas" class="btn btn-outline-secondary btn-sm" type="button">Clear Canvas</button>
 					<button id="undo" class="btn btn-outline-secondary btn-sm" type="button">Undo</button>
-				</div>
-				<!-- Drawing Mode -->
-				<div class="mb-4">
-					<label class="form-label fw-semibold d-block">Drawing Mode:</label>
-					<div></div>
 				</div>
 
 				<!-- Camera Settings -->
@@ -57,11 +55,21 @@ redirect_from:
 							<button id="mPause" class="btn btn-outline-primary" style="min-width: 95px;">Pause</button>
 						</div>
 
-						<div class="col-md-3">
+						<div class="col-md-3 text-center">
 							<label for="FOV" class="form-label">FOV</label>
 							<input type="range" class="form-range" id="FOV" min="1" max="180" value="70">
 						</div>
+						<div class="col-md-3 text-center">
+							<label for="RES_MULT" class="form-label">Resolution Multiplier</label>
+							<input type="range" class="form-range" id="RES_MULT" min="0.05" max="2" value="1" step="0.05">
+						</div>
 					</div>
+				</div>
+
+				<!-- Drawing Mode -->
+				<div class="mb-4">
+					<label class="form-label fw-semibold d-block">Drawing Mode:</label>
+					<div></div>
 				</div>
 			</div>
 		</div>

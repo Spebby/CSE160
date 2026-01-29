@@ -1,6 +1,14 @@
 // Asgn2.js
 import { Cube, Cylinder } from './shapes.js';
 
+/**
+ * TODO:
+ * Screenshot mode?
+ * Basic AA?
+ * Basic normal lighting
+ */
+
+
 // Vertex shader program
 var VSHADER_SOURCE =
 	`attribute vec4 a_Position;
@@ -34,6 +42,7 @@ var START_TIME = performance.now() / 1000.0;
 
 var FOV;
 var IS_PAUSED;
+var RES_MULT;
 
 // Pitch, Yaw
 const CameraMode = {
@@ -65,6 +74,7 @@ function main() {
 	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
 	FOV = document.getElementById('FOV').value;
+	RES_MULT = document.getElementById('RES_MULT').value;
 	IS_PAUSED = document.getElementById('mPause').textContent !== 'Pause';
 
 	resizeCanvas();
@@ -99,6 +109,7 @@ function setupWebGL() {
 
 function setupListeners() {
 	document.getElementById('FOV').addEventListener('input', function() { FOV = this.value; updateProjMatrix(); });
+	document.getElementById('RES_MULT').addEventListener('input', function() { RES_MULT = this.value; resizeCanvas(); });
 	document.getElementById('mTrack').addEventListener('mouseup', function() {
 		// TODO: convert coordinate system from spherical to cartesian
 		
@@ -115,10 +126,6 @@ function setupListeners() {
 			pauseButton.classList.add('btn-warning');
 		}
 	});
-	/*
-	document.getElementById('cR').addEventListener('mouseup', function() { return; });
-	document.getElementById('clearCanvas').addEventListener('click', clearCanvas);
-	*/
 
 	// camera controls
 	canvas.addEventListener('mousedown', function(env) {
@@ -335,22 +342,24 @@ function updateCamera() {
 }
 
 function resizeCanvas() {
-	// TODO: add dpr slider
-	const rect = canvas.getBoundingClientRect();
+    const rect = canvas.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
-    
-    // Set the internal resolution (accounting for high-DPI displays)
-    canvas.width = rect.width * dpr;
-    canvas.height = rect.height * dpr;
-    
+
+    const scaledWidth = rect.width * dpr * RES_MULT;
+    const scaledHeight = rect.height * dpr * RES_MULT;
+
+    canvas.width = Math.round(scaledWidth);
+    canvas.height = Math.round(scaledHeight);
+
     W = canvas.width;
     H = canvas.height;
     HW = W / 2;
     HH = H / 2;
-    
-    gl.viewport(0, 0, canvas.width, canvas.height);
-	
-	updateProjMatrix();
+
+    gl.viewport(0, 0, W, H);
+
+    updateProjMatrix();
+    writeToHTML(`${W}x${H}, DPR: ${dpr}, Multiplier: ${RES_MULT}`, "resMeasure");
 }
 
 function updateProjMatrix() {
