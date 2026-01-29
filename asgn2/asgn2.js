@@ -1,5 +1,5 @@
 // Asgn2.js
-import { Cube } from './shapes.js';
+import { Cube, Cylinder } from './shapes.js';
 
 // Vertex shader program
 var VSHADER_SOURCE =
@@ -33,7 +33,26 @@ var TIME;
 var START_TIME = performance.now() / 1000.0;
 
 var FOV = 70;
-var oDist = 5;
+
+// Pitch, Yaw
+const CameraMode = {
+	TRACK: 0,
+	FREE: 1,
+	ORBIT: 2,
+};
+
+var cameraAngleX = 0;
+var cameraAngleY = 0;
+var cameraDistance = 3;
+
+var isDragging = false;
+var isPanning = false;
+var lastMouseX = 0;
+var lastMouseY = 0;
+
+var cameraTargetX = 0;
+var cameraTargetY = 0;
+var cameraTargetZ = 0;
 
 function main() {
 	setupWebGL();
@@ -44,19 +63,7 @@ function main() {
 	gl.clearColor(0.0, 0.0, 0.0, 1.0);
 	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-	canvas.addEventListener('contextmenu', function(env) {
-		if (env.buttons == 2) {
-			env.preventDefault();
-		}
-	});
-
-	// TODO: setup logic for orbital camera
-	canvas.addEventListener('mousedown', function(env) {
-		
-	});
-
 	FOV = document.getElementById('FOV').value;
-	oDist = document.getElementById('oDist').value;
 
 	resizeCanvas();
 	requestAnimationFrame(tick);
@@ -78,19 +85,22 @@ function setupWebGL() {
 	}
 
 	// Alpha
+	gl.enable(gl.CULL_FACE);
+	gl.cullFace(gl.BACK);
     gl.enable(gl.DEPTH_TEST);
 	gl.enable(gl.BLEND);
 	gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
 	window.gl = gl;
 	window.addEventListener('resize', resizeCanvas);
+	setCameraMode();
 }
 
 function setupListeners() {
-	document.getElementById('toggleCameraMode').addEventListener('click', toggleCameraMode);
 	document.getElementById('FOV').addEventListener('input', function() { FOV = this.value; updateProjMatrix(); });
-	document.getElementById('oDist').addEventListener('input', function() { oDist = this.value; });
-
+	document.getElementById('mOrbit').onclick = function() { setCameraMode(); };
+	document.getElementById('mFree').onclick  = function() { setCameraMode(); };
+	document.getElementById('mTrack').onclick = function() { setCameraMode(); };
 	/*
 	document.getElementById('mPoint').onclick    = function() { return; };
 	document.getElementById('mTri').onclick      = function() { return; };
@@ -105,9 +115,85 @@ function setupListeners() {
 	document.getElementById('clearCanvas').addEventListener('click', clearCanvas);
 	document.getElementById('undo').addEventListener('click', undo);
 	*/
+
+	// camera controls
+	canvas.addEventListener('mousedown', function(env) {
+		isDragging = true;
+		isPanning = env.shiftKey;
+		lastMouseX = env.clientX;
+		lastMouseY = env.clientY;
+	});
+
+	canvas.addEventListener('mousemove', function(env) {
+		if (!isDragging) return;
+		
+		const deltaX = env.clientX - lastMouseX;
+		const deltaY = env.clientY - lastMouseY;
+		
+		if (isPanning) {
+			const panSpeed = 0.005;
+			const radX = cameraAngleX * Math.PI / 180;
+			const radY = cameraAngleY * Math.PI / 180;
+			
+			const rightX = Math.cos(radY);
+			const rightZ = -Math.sin(radY);
+			const upX = -Math.sin(radX) * Math.sin(radY);
+			const upY = Math.cos(radX);
+			const upZ = -Math.sin(radX) * Math.cos(radY);
+		
+			// pan
+			cameraTargetX -= (rightX * deltaX - upX * deltaY) * panSpeed * cameraDistance;
+			cameraTargetY += upY * deltaY * panSpeed * cameraDistance;
+			cameraTargetZ -= (rightZ * deltaX - upZ * deltaY) * panSpeed * cameraDistance;
+		} else {
+			// Rotate the camera
+			cameraAngleY += deltaX * 0.2;
+			cameraAngleX -= deltaY * 0.2;
+			cameraAngleX = Math.max(-89, Math.min(89, cameraAngleX));
+		}
+		
+		lastMouseX = env.clientX;
+		lastMouseY = env.clientY;
+	});
+
+    canvas.addEventListener('mouseup', function(env) {
+        isDragging = false;
+		isPanning  = false;
+    });
+
+    canvas.addEventListener('mouseleave', function(env) {
+        isDragging = false;
+		isPanning  = false;
+    });
+
+    // Zoom with mouse wheel
+    canvas.addEventListener('wheel', function(env) {
+        env.preventDefault();
+        cameraDistance += env.deltaY * 0.01;
+        cameraDistance = Math.max(1, Math.min(10, cameraDistance)); // Clamp between 1 and 10
+    });
+
+    canvas.addEventListener('contextmenu', function(env) {
+        env.preventDefault();
+    });
 }
 
-function toggleCameraMode() {
+function getMode() {
+	const checked = document.querySelector('#camMode input[name="mode"]:checked');
+	return checked ? CameraMode[checked.value] : null;
+}
+
+// this function honestly might be unnecessary since we'll probably want to update
+// camera state every frame for tracking camera, so just decide then.
+function setCameraMode() {
+	const MODE = getMode();
+
+	if (MODE == CameraMode.TRACK) {
+		cameraTargetX = 0;
+		cameraTargetY = 0;
+		cameraTargetZ = 0;
+	}
+
 	return;
 }
 
@@ -177,6 +263,7 @@ function click(env) {
 }
 
 function tick() {
+	updateCamera();
 	renderAllShapes();
 	requestAnimationFrame(tick);
 }
@@ -191,13 +278,46 @@ function renderAllShapes() {
 	
 	var body = new Cube([0, 0].slice(), [1.0, 0.0, 0.0, 1.0].slice(), new Matrix4().setIdentity());
 	body.matrix.scale(1, 1, 1);
-	body.matrix.translate(0, 0, -5);
+	body.matrix.translate(0, 0, 0);
 	body.matrix.rotate(45, 0, 0, 1);
 	body.render();
+
+	var cyl = new Cylinder([0, 0].slice(), [0.0, 1.0, 0.0, 0.5].slice(), new Matrix4().setIdentity());
+	cyl.matrix.translate(-1, 0, 0);
+	cyl.render();
 
 	//writeToLog("ms: " + frameTime.toFixed(2) + " fps: " + (1000/frameTime).toFixed(2));
 
 	START_TIME = now;
+}
+
+function updateCamera() {
+	/* Non-orbital mode
+	// Set up orbital camera (view matrix)
+    var viewMatrix = new Matrix4();
+    viewMatrix.setRotate(cameraAngleX, 1, 0, 0);  // Pitch
+    viewMatrix.rotate(cameraAngleY, 0, 1, 0);      // Yaw
+    viewMatrix.translate(0, 0, -cameraDistance);   // Move back
+    gl.uniformMatrix4fv(window.u_GlobalRotation, false, viewMatrix.elements);
+	*/
+
+	// Orbital camera
+    const radX = cameraAngleX * Math.PI / 180;
+    const radY = cameraAngleY * Math.PI / 180;
+    
+    // camera pos relative to target
+    const camX = cameraTargetX + cameraDistance * Math.cos(radX) * Math.sin(radY);
+    const camY = cameraTargetY + cameraDistance * Math.sin(radX);
+    const camZ = cameraTargetZ + cameraDistance * Math.cos(radX) * Math.cos(radY);
+    
+    // look at the target point
+    var viewMatrix = new Matrix4();
+    viewMatrix.setLookAt(
+        camX, camY, camZ,
+        cameraTargetX, cameraTargetY, cameraTargetZ,
+        0, 1, 0
+    );
+    gl.uniformMatrix4fv(window.u_GlobalRotation, false, viewMatrix.elements);
 }
 
 function resizeCanvas() {

@@ -39,19 +39,7 @@ redirect_from:
 				<!-- Drawing Mode -->
 				<div class="mb-4">
 					<label class="form-label fw-semibold d-block">Drawing Mode:</label>
-					<div id="drawingMode" class="btn-group" role="group" aria-label="Drawing mode">
-						<input type="radio" class="btn-check" name="mode" id="mPoint"   value="POINT" checked>
-						<label class="btn btn-outline-primary" for="mPoint">Points</label>
-						<input type="radio" class="btn-check" name="mode" id="mTri"     value="TRIANGLE">
-						<label class="btn btn-outline-primary" for="mTri">Triangles</label>
-						<input type="radio" class="btn-check" name="mode" id="mCircle"  value="CIRCLE">
-						<label class="btn btn-outline-primary" for="mCircle">Circles</label>
-						<input type="radio" class="btn-check" name="mode" id="mPolyline" value="POLYLINE">
-						<label class="btn btn-outline-primary" for="mPolyline">Polyline</label>
-						<input type="radio" class="btn-check" name="mode" id="mPolygon" value="POLYGON">
-						<label class="btn btn-outline-primary" for="mPolygon">Polygon</label>
-						<button type="button" id="mSpecial" class="btn btn-outline-secondary">Drawing</button>
-					</div>
+					<div></div>
 				</div>
 
 				<!-- Camera Settings -->
@@ -59,15 +47,18 @@ redirect_from:
 					<label class="form-label fw-semibold">Camera Settings:</label>
 
 					<div class="row row-cols-2 row-cols-md-4 g-4 align-items-center">
-						<button id="toggleCameraMode" class="btn btn-outline-secondary btn-sm" type="button">Centre Camera</button>
-						<div class="col-md-3">
-							<label for="FOV" class="form-label">FOV</label>
-							<input type="range" class="form-range" id="FOV" min="1" max="180" value="70">
+						<div id="camMode" class="btn-group" role="group" aria-label="Camera Mode">
+							<input type="radio" class="btn-check" name="mode" id="mTrack" value="TRACK">
+							<label class="btn btn-outline-primary" for="mTrack">Tracking</label>
+							<input type="radio" class="btn-check" name="mode" id="mFree" value="FREE">
+							<label class="btn btn-outline-primary" for="mFree">Free</label>
+							<input type="radio" class="btn-check" name="mode" id="mOrbit" value="ORBIT" checked>
+							<label class="btn btn-outline-primary" for="mOrbit">Orbit</label>
 						</div>
 
 						<div class="col-md-3">
-							<label for="oDist" class="form-label">Orbit Distance</label>
-							<input type="range" class="form-range" id="oDist" min="1" max="30" value="5">
+							<label for="FOV" class="form-label">FOV</label>
+							<input type="range" class="form-range" id="FOV" min="1" max="180" value="70">
 						</div>
 					</div>
 				</div>
