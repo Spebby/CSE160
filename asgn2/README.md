@@ -2,6 +2,10 @@
 
 A 3D animation of an animal, powered by WebGL.
 
+I make use of a transform wrapper to simplify the creation of complex meshes,
+though this adds slight overhead. Performance is not bad enough to justify it,
+but a dirty flag would be a good optimisation, which I briefly considered.
+
 ## Sources
 
 None, so far.

@@ -179,6 +179,17 @@ class Matrix4 {
         return this;
     }
 
+	copy(other) {
+        const e = this.elements;
+        const o = other.elements;
+        for (let i = 0; i < 16; i++) e[i] = o[i];
+        return this;
+    }
+
+    clone() {
+        return new Matrix4().copy(this);
+    }
+
     /**
      * Copy matrix.
      * @param src source matrix

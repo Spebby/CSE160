@@ -1,5 +1,7 @@
 // Asgn2.js
 import { Cube, Cylinder } from './shapes.js';
+import Transform from './transform.js';
+import Anteater from './anteater.js';
 
 /**
  * TODO:
@@ -32,6 +34,7 @@ var FSHADER_SOURCE =
 
 var canvas;
 var gl;
+var ANTEATER;
 
 var W;
 var H;
@@ -60,6 +63,10 @@ var isPanning = false;
 var lastMouseX = 0;
 var lastMouseY = 0;
 
+var cameraPositionX = 0;
+var cameraPositionY = 0;
+var cameraPositionZ = 0;
+
 var cameraTargetX = 0;
 var cameraTargetY = 0;
 var cameraTargetZ = 0;
@@ -69,6 +76,7 @@ function main() {
 	setupListeners();
 	connectVariablesToGLSL();
 
+	ANTEATER = new Anteater([0, 0, 0].slice(), new Matrix4());
 	// clear colour
 	gl.clearColor(0.0, 0.0, 0.0, 1.0);
 	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -153,9 +161,9 @@ function setupListeners() {
 			const upZ = -Math.sin(radX) * Math.cos(radY);
 		
 			// pan
-			cameraTargetX -= (rightX * deltaX - upX * deltaY) * panSpeed * cameraDistance;
-			cameraTargetY += upY * deltaY * panSpeed * cameraDistance;
-			cameraTargetZ -= (rightZ * deltaX - upZ * deltaY) * panSpeed * cameraDistance;
+			cameraPositionX -= (rightX * deltaX - upX * deltaY) * panSpeed * cameraDistance;
+			cameraPositionY += upY * deltaY * panSpeed * cameraDistance;
+			cameraPositionZ -= (rightZ * deltaX - upZ * deltaY) * panSpeed * cameraDistance;
 		} else {
 			// Rotate the camera
 			cameraAngleY += deltaX * 0.2;
@@ -279,16 +287,15 @@ function renderAllShapes() {
 	const frameTime = now - START_TIME;
 
 	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+	ANTEATER.render();
 	
-	var body = new Cube([0, 0].slice(), [1.0, 0.0, 0.0, 1.0].slice(), new Matrix4().setIdentity());
-	body.matrix.scale(1, 1, 1);
-	body.matrix.translate(0, 0, 0);
-	body.matrix.rotate(45, 0, 0, 1);
+	/*
+	var body = new Cube(new Transform([0, 0, 0], [0, 0, 45]), [1.0, 0, 0, 0.0, 1.0].slice());
 	body.render();
 
-	var cyl = new Cylinder([0, 0].slice(), [0.0, 1.0, 0.0, 0.5].slice(), new Matrix4().setIdentity());
-	cyl.matrix.translate(-1, 0, 0);
+	var cyl = new Cylinder(new Transform([-1, 0, 0]), [0.0, 1.0, 0.0, 0.5].slice());
 	cyl.render();
+	*/
 
 	writeToHTML(`ms: ${frameTime.toFixed(2)} fps: ${(1000/frameTime).toFixed(2)}`, "profMeasure");
 
@@ -313,12 +320,13 @@ function updateCamera() {
 
 	// orbital & tracking act the same
 
-	// TODO: for tracking, override cameraTarget to target
+	// TODO: for tracking, override cameraPosition to target
 	if (MODE == CameraMode.TRACK) {
 		const SMOOTH = 0.1;
-		cameraTargetX += (0 - cameraTargetX) * SMOOTH;
-		cameraTargetY += (0 - cameraTargetY) * SMOOTH;
-		cameraTargetZ += (0 - cameraTargetZ) * SMOOTH;
+		[cameraTargetX, cameraTargetY, cameraTargetZ] = ANTEATER.pelvis.getWorldPosition();
+		cameraPositionX += (cameraTargetX - cameraPositionX) * SMOOTH;
+		cameraPositionY += (cameraTargetY - cameraPositionY) * SMOOTH;
+		cameraPositionZ += (cameraTargetZ - cameraPositionZ) * SMOOTH;
 		isPanning = false; // jank but acceptable
 	}
 
@@ -327,15 +335,15 @@ function updateCamera() {
     const radY = cameraAngleY * Math.PI / 180;
     
     // camera pos relative to target
-    const camX = cameraTargetX + cameraDistance * Math.cos(radX) * Math.sin(radY);
-    const camY = cameraTargetY + cameraDistance * Math.sin(radX);
-    const camZ = cameraTargetZ + cameraDistance * Math.cos(radX) * Math.cos(radY);
+    const camX = cameraPositionX + cameraDistance * Math.cos(radX) * Math.sin(radY);
+    const camY = cameraPositionY + cameraDistance * Math.sin(radX);
+    const camZ = cameraPositionZ + cameraDistance * Math.cos(radX) * Math.cos(radY);
     
     // look at the target point
     var viewMatrix = new Matrix4();
     viewMatrix.setLookAt(
         camX, camY, camZ,
-        cameraTargetX, cameraTargetY, cameraTargetZ,
+        cameraPositionX, cameraPositionY, cameraPositionZ,
         0, 1, 0
     );
     gl.uniformMatrix4fv(window.u_GlobalRotation, false, viewMatrix.elements);

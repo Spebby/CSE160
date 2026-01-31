@@ -1,3 +1,5 @@
+import Transform from './transform.js'
+
 // shapes.js
 /**
  * We can pack a bunch of vertex information in here & use offsets
@@ -90,9 +92,6 @@ const shapeArray = [
 shapeArray.push(...cylinderVerts);
 
 
-const DEG_TO_RAD = Math.PI / 180;
-const RAD_TO_DEG = 180 / Math.PI;
-
 // shape interface
 export default class Shape {
 	static vBuffer = null;
@@ -116,14 +115,12 @@ export default class Shape {
 	}
 
 	/**
-	 * @param {Array<number>} pos - the reference position (offset) for the triangle
+	 * @param {Transform} transform
 	 * @param {Array<number>} colour - RGBA color
-	 * @param {Matrix4} matrix - Local model matrix.
 	 */
-	constructor(pos, colour, matrix) {
-		this.pos = pos;
+	constructor(transform, colour) {
+		this.transform = transform;
 		this.colour = colour;
-		this.matrix = matrix;
 		this.constructor.initSharedBuffer();
 	}
 
@@ -140,7 +137,7 @@ export default class Shape {
 		GL.uniformMatrix4fv(
 			window.u_ModelMatrix,
 			false,
-			this.matrix.elements
+			this.transform.worldMatrix.elements
 		);
 
 		GL.bindBuffer(GL.ARRAY_BUFFER, C.vBuffer);
