@@ -74,6 +74,32 @@ function makeUnitCylinder(radialSegments = 8) {
 	return vertices;
 }
 
+function generateNormals(vertices) {
+	const normals = [];
+	
+	// Process vertices in groups of 3 (triangles)
+	for (let i = 0; i < vertices.length; i += 9) {
+		const v0 = [vertices[i], vertices[i+1], vertices[i+2]];
+		const v1 = [vertices[i+3], vertices[i+4], vertices[i+5]];
+		const v2 = [vertices[i+6], vertices[i+7], vertices[i+8]];
+		
+		const edge1 = [v1[0] - v0[0], v1[1] - v0[1], v1[2] - v0[2]];
+		const edge2 = [v2[0] - v0[0], v2[1] - v0[1], v2[2] - v0[2]];
+		
+		// cross product & normalise
+		const nx = edge1[1] * edge2[2] - edge1[2] * edge2[1];
+		const ny = edge1[2] * edge2[0] - edge1[0] * edge2[2];
+		const nz = edge1[0] * edge2[1] - edge1[1] * edge2[0];
+		
+		const len = Math.sqrt(nx*nx + ny*ny + nz*nz);
+		const normal = len > 0 ? [nx/len, ny/len, nz/len] : [0, 1, 0];
+		
+		// flat shading is acceptable
+		normals.push(...normal, ...normal, ...normal);
+	}
+	
+	return normals;
+}
 
 const cylinderVerts = makeUnitCylinder(8);
 
@@ -90,7 +116,7 @@ const shapeArray = [
 	-0.5, -0.5, -0.5,   0.5, -0.5, -0.5,   0.5, -0.5,  0.5,   -0.5, -0.5, -0.5,   0.5, -0.5,  0.5,   -0.5, -0.5,  0.5
 ];
 shapeArray.push(...cylinderVerts);
-
+const normalArray = generateNormals(shapeArray);
 
 // shape interface
 export default class Shape {
@@ -98,6 +124,9 @@ export default class Shape {
 	static vertexData = null;
 	static vertexCount = 0;
 	static vertexOffset = 0;
+
+	static nBuffer = null;
+	static normalData = null;
 
 	static initSharedBuffer() {
 		if (this.vBuffer) return;
@@ -110,6 +139,14 @@ export default class Shape {
 		GL.bufferData(
 			GL.ARRAY_BUFFER,
 			new Float32Array(this.vertexData),
+			GL.STATIC_DRAW
+		);
+
+		this.nBuffer = GL.createBuffer();
+		GL.bindBuffer(GL.ARRAY_BUFFER, this.nBuffer);
+		GL.bufferData(
+			GL.ARRAY_BUFFER,
+			new Float32Array(this.normalData),
 			GL.STATIC_DRAW
 		);
 	}
@@ -143,6 +180,11 @@ export default class Shape {
 		GL.bindBuffer(GL.ARRAY_BUFFER, C.vBuffer);
 		GL.vertexAttribPointer(window.a_Position, 3, GL.FLOAT, false, 0, 0);
 		GL.enableVertexAttribArray(window.a_Position);
+
+		GL.bindBuffer(GL.ARRAY_BUFFER, C.nBuffer);
+		GL.vertexAttribPointer(window.a_Normal, 3, GL.FLOAT, false, 0, 0);
+		GL.enableVertexAttribArray(window.a_Normal);
+
 		GL.drawArrays(GL.TRIANGLES, C.vertexOffset, C.vertexCount);
 	}
 }
@@ -151,10 +193,12 @@ export class Cube extends Shape {
 	static vertexData = shapeArray;
 	static vertexCount = 36;
 	static vertexOffset = CUBE_OFFSET;
+	static normalData = normalArray;
 }
 
 export class Cylinder extends Shape {
 	static vertexData = shapeArray;
 	static vertexCount = (cylinderVerts.length / 3);
 	static vertexOffset = CUBE_OFFSET + Cube.vertexCount;
+	static normalData = normalArray;
 }

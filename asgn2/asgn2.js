@@ -14,24 +14,56 @@ const RAD_TO_DEG = 180 / Math.PI;
  */
 
 
+// Lighting model is based loosely on Blinn Phong.
+// I was inspired to implement lighting after seeing 
+// Lighting is a bit beyond me so I enlisted Gen AI to adapt
+// asgn1's rendering code.
+
 // Vertex shader program
 var VSHADER_SOURCE =
 	`attribute vec4 a_Position;
+	attribute vec4 a_Normal;
+
 	uniform mat4 u_ModelMatrix;
 	uniform mat4 u_GlobalRotation;
 	uniform mat4 u_ProjectionMatrix;
 
+	varying vec3 v_Normal;
+	varying vec3 v_FragPos;
+
 	// consider normal stuff for lighting
 	void main() {
-		gl_Position = u_ProjectionMatrix * u_GlobalRotation * u_ModelMatrix * a_Position;
+		vec4 worldPos = u_ModelMatrix * a_Position;
+		v_FragPos = worldPos.xyz;
+		v_Normal = mat3(u_ModelMatrix) * a_Normal.xyz;
+		gl_Position = u_ProjectionMatrix * u_GlobalRotation * worldPos;
 	}`;
 
 // Fragment shader program
-var FSHADER_SOURCE =
-	`precision mediump float;
+var FSHADER_SOURCE = `
+	precision mediump float;
+
+	varying vec3 v_Normal;
+	varying vec3 v_FragPos;
+
 	uniform vec4 u_FragColor;
+
+	const vec3 lightDir = normalize(vec3(10.0, 20.0, 10.0));
+	const vec3 ambientColor = vec3(0.1, 0.1, 0.1);
+	const vec3 diffuseColor = vec3(0.4, 0.4, 0.4);
+
+	const float screenGamma = 2.2;
+
 	void main() {
-		gl_FragColor = u_FragColor;
+		vec3 normal = normalize(v_Normal);
+
+		// Lambertian diffuse with no distance attenuation
+		float lambertian = max(dot(normal, lightDir), 0.0);
+		vec3 colorLinear = ambientColor + diffuseColor * lambertian;
+
+		// Gamma correction
+		vec3 colorGammaCorrected = pow(colorLinear, vec3(1.0 / screenGamma));
+		gl_FragColor = vec4(colorGammaCorrected * u_FragColor.rgb, 1.0);
 	}`;
 
 
@@ -252,6 +284,13 @@ function connectVariablesToGLSL() {
 	}
 	window.a_Position = tPos;
 
+	let tNor = gl.getAttribLocation(gl.program, 'a_Normal');
+	if (tNor < 0) {
+		console.log('Failed to get storage location of a_Normal');
+		return;
+	}
+	window.a_Normal = tNor;
+
 	let tCol = gl.getUniformLocation(gl.program, 'u_FragColor');
 	if (!tCol) {
 		console.log('Failed to get storage location of u_FragColor');
@@ -316,13 +355,11 @@ function renderAllShapes(dt) {
 	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 	ANTEATER.render();
 	
-	/*
 	var body = new Cube(new Transform([0, 0, 0], [0, 0, 45]), [1.0, 0, 0, 0.0, 1.0].slice());
 	body.render();
 
 	var cyl = new Cylinder(new Transform([-1, 0, 0]), [0.0, 1.0, 0.0, 0.5].slice());
 	cyl.render();
-	*/
 }
 
 // handles updating canvas size when window is resize

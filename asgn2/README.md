@@ -14,3 +14,17 @@ None, so far.
 
 As with assignment 0 & 1, the HTML was written w/ the help of gen AI, as I
 reused the HTML between each assignment.
+
+I used Gen AI to write some of the more tedious functions, namely
+`makeUnitCylinder` (though this required a lot of manual tweaking), and
+`generateNormals`. I also used it to adapt my previous assignment's shader code
+to support basic lighting, based on Blinn Phong. I used
+[Wikipedia's OpenGL code](https://en.wikipedia.org/wiki/Blinn%E2%80%93Phong_reflection_model)
+as a reference. I did this to make animating easier, as figuring out where
+joints started and ended in full bright was tedious. On the lighting model
+itself: it's greatly simplified: lighting is only directional, the same distance
+attenuation is not present. I also skipped the specular lighting step. I don't
+care for specular much, and it looks weird on a furry animal anyway.
+
+I also used it for rubber ducking while working on camera code and to detect
+bugs and errors with my logic. Which took quite awhile.
