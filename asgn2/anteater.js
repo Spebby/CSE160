@@ -64,10 +64,12 @@ export default class Anteater {
 
 		// To simplify mesh creation & animation, I do not scale the skeleton's pivots.
 		// as a result the attached "chunks" must be scaled individually. 
-		const bodyVis   = new Transform([0, 0.1, 1.5], [0, 0, 0], [0.75, 1.25, 4], pelvis);
-		const tailAVis  = new Transform([0, 0, 0.875], [0, 0, 0], [0.75, 1, 1.75], tailA);
-		const tailBVis  = new Transform([0, -0.1, 0.5], [0, 0, 0], [0.8, 1.25, 1.65], tailB);
-		const stripeVis = new Transform([0, -0.02, 0.11], [176, 180, 0], [0.76, 0.8, 1.3], chest);
+		const bodyVis    = new Transform([0, 0.1, 1.5], [0, 0, 0], [0.75, 1.25, 4], pelvis);
+		const tailAVis   = new Transform([0, 0, 0.875], [0, 0, 0], [0.75, 1, 1.75], tailA);
+		const tailBVis   = new Transform([0, -0.1, 0.5], [0, 0, 0], [0.8, 1.25, 1.65], tailB);
+		const stripeVis  = new Transform([0, -0.02, 0.11], [176, 180, 0], [0.76, 0.8, 1.3], chest);
+		const stripeBVis = new Transform([0, -0.065, -0.5], [176, 180, 0], [0.765, 0.8, 1], chest);
+		const stripeCVis = new Transform([0,  0.2, -0.75], [176, 180, 0], [0.77, 0.8, 1], chest);
 
 		const lThighVis = new Transform([0, -0.625, 0], [0, 0, 0], [0.5, 1.5, 0.75], lThigh);
 		const lShinVis  = new Transform([0, -0.5, 0], [0, 0, 0], [0.4, 1.25, 0.6], lShin);
@@ -111,7 +113,8 @@ export default class Anteater {
 		this.meshes.push(new Cube(headVisB, BODY_COLOUR));
 		this.meshes.push(new Cylinder(eye, [0, 0, 0, 1].slice()));
 
-		this.meshes.push(new Ramp(transform, BODY_ALT));
+		this.meshes.push(new SlantedCube(stripeBVis, BODY_ALT));
+		this.meshes.push(new Ramp(stripeCVis, BODY_DARK));
 	}
 
 	render() {
