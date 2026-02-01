@@ -70,6 +70,10 @@ redirect_from:
 							<label for="invY" class="form-label">Invert Y</label>
 							<input type="checkbox" class="form-input" id="invY">
 						</div>
+						<div class="col-md-3 text-center">
+							<label for="mDebug" class="form-label">Debug</label>
+							<input type="checkbox" class="form-input" id="mDebug">
+						</div>
 					</div>
 				</div>
 
@@ -80,20 +84,21 @@ redirect_from:
 				</div>
 			</div>
 
-
-
 			<div class="mb-3 mx-3">
 				<h5>Controls</h5>
 				<ul class="list-unstyled mb-2">
 					<li><strong>Orbit:</strong> Click and move with mouse</li>
 					<li><strong>Tracking & Free:</strong> WASD + Q / E for vertical movement</li>
 				</ul>
-				<p class="small text-muted mb-1">
+				<span class="small text-muted mb-1">
+				<p>
 					What's with tracking? I had originally envisioned the animal moving around more, so you'd maybe want to keep the camera stationary while the animal moved. I moved away from this concept but left the code in just in case.  
-					Another tidbit: the orbital camera originally supported panning, but I ultimately decided against this, as it felt awkward and there was no simple "follow the animal as it moves" option.
-
-					As a result of this, the conversions between the types are a bit nasty in code, primarily because I wanted to preserve the exact orbit & tracking views when switching to free cam. I attempted this somewhat for the other way around, but as free cam can have angles that are impossible for tracking or orbit to have, it's not as seamless.
+					Another tidbit: the orbital camera originally supported panning, but I ultimately decided against this, as it felt awkward and there was no simple "follow the animal as it moves" option. As a result of this, the conversions between the types are a bit nasty in code, primarily because I wanted to preserve the exact orbit & tracking views when switching to free cam. I attempted this somewhat for the other way around, but as free cam can have angles that are impossible for tracking or orbit to have, it's not as seamless.
 				</p>
+				<p>
+					The debug feature is another feature that requires a bit of explanation. I added it in order to be able to visualise the skeleton's pivots, and visualise the centre of meshes. Red nodes represent parent transforms, and green nodes represent end nodes in a hierarchy. All the green nodes you see are mesh transforms, not intended for use in animation. The model was designed with the pelvis as the root of the mesh. For easier global manipulation, a central "transform" was added, which the pelvis is a child of. So while the pelvis technically isn't the root, it's still the rig's anatomical root.
+				</p>
+				</span>
 			</div>
 		</div>
 	</div>

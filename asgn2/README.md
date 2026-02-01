@@ -6,9 +6,16 @@ I make use of a transform wrapper to simplify the creation of complex meshes,
 though this adds slight overhead. Performance is not bad enough to justify it,
 but a dirty flag would be a good optimisation, which I briefly considered.
 
+For debug visualisation... what's with it? I wanted to display the skeleton in
+order to make animating and lining things up a little easier. Red nodes are
+parents nodes, whereas green nodes are end-nodes. All end-nodes are mesh
+transforms which are parented to the red pivot nodes.
+
 ## Sources
 
-None, so far.
+[Blinn-Phong Shading](https://en.wikipedia.org/wiki/Blinn%E2%80%93Phong_reflection_model) -
+I used a modified version of this lighting technique for my scene's lighting. I
+used the example OpenGL code as a base.
 
 ## Gen AI Acknowledgment
 

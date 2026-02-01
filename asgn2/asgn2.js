@@ -1,5 +1,5 @@
 // Asgn2.js
-import { Cube, Cylinder } from './shapes.js';
+import { Cube, Cylinder16 } from './shapes.js';
 import Transform from './transform.js';
 import Anteater from './anteater.js';
 
@@ -68,8 +68,9 @@ var FSHADER_SOURCE = `
 
 
 var canvas;
-var gl;
+var GL;
 var ANTEATER;
+var DEBUG;
 
 var W;
 var H;
@@ -120,18 +121,20 @@ function main() {
 
 	ANTEATER = new Anteater();
 	// clear colour
-	gl.clearColor(0.0, 0.0, 0.0, 1.0);
-	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+	GL.clearColor(0.0, 0.0, 0.0, 1.0);
+	GL.clear(GL.COLOR_BUFFER_BIT | GL.DEPTH_BUFFER_BIT);
 
 	FOV = document.getElementById('FOV').value;
 	RES_MULT = document.getElementById('RES_MULT').value;
 	IS_PAUSED = document.getElementById('mPause').textContent !== 'Pause';
-	invX = document.getElementById('invX') != 'on';
-	invY = document.getElementById('invY') != 'on';
+	invX = document.getElementById('invX').checked;
+	invY = document.getElementById('invY').checked;
 
 	MOVE_SPEED = parseFloat(document.getElementById('MOVE_SPEED').value);
 	MAX_MOVE_SPEED = parseFloat(document.getElementById('MOVE_SPEED').max);
 	currCamMode = CameraMode[document.querySelector('#camMode input[name="mode"]:checked').value];
+
+	DEBUG = document.getElementById('mDebug').checked;
 
 	resizeCanvas();
 	requestAnimationFrame(tick);
@@ -144,30 +147,30 @@ function setupWebGL() {
 		return;
 	}
 
-	// Get the rendering context for 2DCG <- (2)
-	// suggested by vid 1.8
-	gl = canvas.getContext("webgl", { preserveDrawingBuffer: true});
-	if (!gl) {
+	GL = canvas.getContext("webgl", { preserveDrawingBuffer: true});
+	if (!GL) {
 		console.log('Failed to get the rendering context for WebGL');
 		return;
 	}
 
-	gl.enable(gl.CULL_FACE);
-	gl.cullFace(gl.BACK);
-    gl.enable(gl.DEPTH_TEST);
-	//gl.enable(gl.BLEND);
-	//gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+	GL.enable(GL.CULL_FACE);
+	GL.cullFace(GL.BACK);
+    GL.enable(GL.DEPTH_TEST);
+	GL.enable(GL.BLEND);
+	GL.blendFunc(GL.SRC_ALPHA, GL.ONE_MINUS_SRC_ALPHA);
 
-	window.gl = gl;
+	lineBuffer = GL.createBuffer();
+
+	window.GL = GL;
 	window.addEventListener('resize', resizeCanvas);
 }
 
 function setupListeners() {
 	document.getElementById('FOV').addEventListener('input', function() { FOV = this.value; updateProjMatrix(); });
 	document.getElementById('RES_MULT').addEventListener('input', function() { RES_MULT = this.value; resizeCanvas(); });
-	document.getElementById('invX').addEventListener('mouseup', function() { invX = 'on' ? true : false; })
-	document.getElementById('invY').addEventListener('mouseup', function() { invY = 'on' ? true : false; })
-
+	document.getElementById('invX').addEventListener('change', function() { invX = this.checked; })
+	document.getElementById('invY').addEventListener('change', function() { invY = this.checked; })
+	document.getElementById('mDebug').addEventListener('change', function() { DEBUG = this.checked; })
 
 	let pauseButton = document.getElementById('mPause');
 	pauseButton.addEventListener('click', function() {
@@ -271,43 +274,43 @@ function screenSpaceToCanvasSpace(env) {
 }
 
 function connectVariablesToGLSL() {
-	if (!initShaders(gl, VSHADER_SOURCE, FSHADER_SOURCE)) {
+	if (!initShaders(GL, VSHADER_SOURCE, FSHADER_SOURCE)) {
 		console.log('Failed to init shaders.');
 		return;
 	}
 
 	// Get vars we want & store them
-	let tPos = gl.getAttribLocation(gl.program, 'a_Position');
+	let tPos = GL.getAttribLocation(GL.program, 'a_Position');
 	if (tPos < 0) {
 		console.log('Failed to get storage location of a_Position');
 		return;
 	}
 	window.a_Position = tPos;
 
-	let tNor = gl.getAttribLocation(gl.program, 'a_Normal');
+	let tNor = GL.getAttribLocation(GL.program, 'a_Normal');
 	if (tNor < 0) {
 		console.log('Failed to get storage location of a_Normal');
 		return;
 	}
 	window.a_Normal = tNor;
 
-	let tCol = gl.getUniformLocation(gl.program, 'u_FragColor');
+	let tCol = GL.getUniformLocation(GL.program, 'u_FragColor');
 	if (!tCol) {
 		console.log('Failed to get storage location of u_FragColor');
 		return;
 	}
 	window.u_FragColor = tCol;
 
-	let tMod = gl.getUniformLocation(gl.program, 'u_ModelMatrix');
+	let tMod = GL.getUniformLocation(GL.program, 'u_ModelMatrix');
 	if (!tMod) {
 		console.log('Failed to get storage location of u_ModelMatrix');
 		return;
 	}
 	window.u_ModelMatrix = tMod;
 	var identityMatrix = new Matrix4();
-	gl.uniformMatrix4fv(window.u_ModelMatrix, false, identityMatrix.elements);
+	GL.uniformMatrix4fv(window.u_ModelMatrix, false, identityMatrix.elements);
 
-	let tGol = gl.getUniformLocation(gl.program, 'u_GlobalRotation');
+	let tGol = GL.getUniformLocation(GL.program, 'u_GlobalRotation');
 	if (!tGol) {
 		console.log('Failed to get storage location of u_GlobalRotation');
 		return;
@@ -315,10 +318,10 @@ function connectVariablesToGLSL() {
 	window.u_GlobalRotation = tGol;
 	var globalRotation = new Matrix4();
 	globalRotation.setIdentity();
-	gl.uniformMatrix4fv(window.u_GlobalRotation, false, globalRotation.elements);
+	GL.uniformMatrix4fv(window.u_GlobalRotation, false, globalRotation.elements);
 
 
-	let tProj = gl.getUniformLocation(gl.program, 'u_ProjectionMatrix');
+	let tProj = GL.getUniformLocation(GL.program, 'u_ProjectionMatrix');
 	if (!tProj) {
 		console.log('Failed to get storage location of u_ProjectionMatrix');
 		return;
@@ -351,15 +354,51 @@ function dispatchAnimations(dt) {
 	if (IS_PAUSED) return;
 }
 
+var lineBuffer;
+const lineData = new Float32Array(6);
 function renderAllShapes(dt) {
-	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+	GL.clear(GL.COLOR_BUFFER_BIT | GL.DEPTH_BUFFER_BIT);
 	ANTEATER.render();
 	
-	var body = new Cube(new Transform([0, 0, 0], [0, 0, 45]), [1.0, 0, 0, 0.0, 1.0].slice());
-	body.render();
+	var ground = new Cylinder16(new Transform([0, -0.05, 0], [0, 0, 0], [5, 0.1, 5]), [0.3, 0.3, 0.3, 0.5].slice());
+	ground.render();
 
-	var cyl = new Cylinder(new Transform([-1, 0, 0]), [0.0, 1.0, 0.0, 0.5].slice());
-	cyl.render();
+	if (DEBUG) {
+		GL.disable(GL.DEPTH_TEST);
+		const graph = Transform.getHierarchyGraph(ANTEATER.transform);
+		const identity = new Matrix4();
+		GL.uniformMatrix4fv(window.u_ModelMatrix, false, identity.elements);
+		GL.bindBuffer(GL.ARRAY_BUFFER, lineBuffer);
+		GL.vertexAttribPointer(window.a_Position, 3, GL.FLOAT, false, 0, 0);
+		GL.enableVertexAttribArray(window.a_Position);
+		
+		const nodeCube = new Cube(new Transform([0, 0, 0], [0, 0, 0], [0.1, 0.1, 0.1]), [1, 0, 0, 1]);
+		
+		// Find leaf nodes (transforms with no children)
+		const leafNodes = new Set(graph.nodes.filter(n => n.transform.children.length === 0).map(n => n.transform));
+		
+		for (const edge of graph.edges) {
+			lineData[0] = edge.from[0];
+			lineData[1] = edge.from[1];
+			lineData[2] = edge.from[2];
+			lineData[3] = edge.to[0];
+			lineData[4] = edge.to[1];
+			lineData[5] = edge.to[2];
+			
+			GL.uniform4f(window.u_FragColor, 1, 1, 0, 1);
+			GL.bufferData(GL.ARRAY_BUFFER, lineData, GL.DYNAMIC_DRAW);
+			GL.drawArrays(GL.LINES, 0, 2);
+		}
+		
+		// Render nodes
+		for (const node of graph.nodes) {
+			nodeCube.transform.setPos(...node.position);
+			// Green for leaf nodes, red for others
+			nodeCube.colour = leafNodes.has(node.transform) ? [0, 1, 0, 1] : [1, 0, 0, 1];
+			nodeCube.render();
+		}
+		GL.enable(GL.DEPTH_TEST);
+	}
 }
 
 // handles updating canvas size when window is resize
@@ -378,7 +417,7 @@ function resizeCanvas() {
     HW = W / 2;
     HH = H / 2;
 
-    gl.viewport(0, 0, W, H);
+    GL.viewport(0, 0, W, H);
 
     updateProjMatrix();
     writeToHTML(`${W}x${H}, DPR: ${dpr}, Multiplier: ${RES_MULT}`, "resMeasure");
@@ -388,7 +427,7 @@ function updateProjMatrix() {
 	var projMatrix = new Matrix4();
 	var aspect = W / H;
 	projMatrix.setPerspective(FOV, aspect, 0.05, 100);
-	gl.uniformMatrix4fv(window.u_ProjectionMatrix, false, projMatrix.elements);
+	GL.uniformMatrix4fv(window.u_ProjectionMatrix, false, projMatrix.elements);
 }
 
 // A bunch of annoying camera math
@@ -396,7 +435,7 @@ function updateCamera(dt) {
 	const MODE = getMode();
 	const speed = MOVE_SPEED * (dt / 16);
 
-	[cameraTargetX, cameraTargetY, cameraTargetZ] = ANTEATER.transform.getWorldPosition();
+	[cameraTargetX, cameraTargetY, cameraTargetZ] = MODE === CameraMode.Orbit ? getCameraPivot() : getCameraPivot();
 	if (MODE === CameraMode.FREE || MODE === CameraMode.TRACK) {
 		const forward = (keyStates['w'] ? 1 : 0) - (keyStates['s'] ? 1 : 0);
 		const right = (keyStates['a'] ? 1 : 0) - (keyStates['d'] ? 1 : 0);
@@ -406,8 +445,7 @@ function updateCamera(dt) {
 		if (MODE === CameraMode.FREE) {
 			({ forwardX, forwardZ, rightX, rightZ } = getMovementVectors(cameraAngleY));
 		} else {
-			const [targetX, , targetZ] = ANTEATER.transform.getWorldPosition();
-			({ forwardX, forwardZ, rightX, rightZ } = getTrackingVectors(targetX, targetZ));
+			({ forwardX, forwardZ, rightX, rightZ } = getTrackingVectors(cameraTargetX, cameraTargetZ));
 		}
 
 		
@@ -449,20 +487,20 @@ function handleModeTransition(newMode, oldMode) {
 		cameraAngleY = ((cameraAngleY + 180 + 180) % 360) - 180;
 
 		if (newMode === CameraMode.TRACK) {
-			[cameraTargetX, cameraTargetY, cameraTargetZ] = ANTEATER.transform.getWorldPosition();
+			[cameraTargetX, cameraTargetY, cameraTargetZ] = getCameraPivot();
 		}
 	}
 
 	// TRACK → FREE
 	if (oldMode === CameraMode.TRACK && newMode === CameraMode.FREE) {
-		const [tx, ty, tz] = ANTEATER.transform.getWorldPosition();
-		const ang = dirToAngles(tx - cameraPositionX, ty - cameraPositionY, tz - cameraPositionZ);
+		const [cameraTargetX, cameraTargetY, cameraTargetZ] = getCameraPivot();
+		const ang = dirToAngles(cameraTargetX - cameraPositionX, cameraTargetY - cameraPositionY, cameraTargetZ - cameraPositionZ);
 		if (ang) [cameraAngleX, cameraAngleY] = ang;
 	}
 
 	// FREE / TRACK → ORBIT
 	if (newMode === CameraMode.ORBIT && oldMode !== CameraMode.ORBIT) {
-		[cameraTargetX, cameraTargetY, cameraTargetZ] = ANTEATER.transform.getWorldPosition();
+		[cameraTargetX, cameraTargetY, cameraTargetZ] = getCameraPivot();	
 		
 		const dx = cameraPositionX - cameraTargetX;
 		const dy = cameraPositionY - cameraTargetY;
@@ -481,10 +519,14 @@ main();
 
 
 // Camera helpers
+function getCameraPivot() {
+	return ANTEATER.cameraFocus.getWorldPosition();
+}
+
 function setViewMatrix(camX, camY, camZ, targetX, targetY, targetZ) {
 	const viewMatrix = new Matrix4();
 	viewMatrix.setLookAt(camX, camY, camZ, targetX, targetY, targetZ, 0, 1, 0);
-	gl.uniformMatrix4fv(window.u_GlobalRotation, false, viewMatrix.elements);
+	GL.uniformMatrix4fv(window.u_GlobalRotation, false, viewMatrix.elements);
 }
 
 function getMovementVectors(angleY) {

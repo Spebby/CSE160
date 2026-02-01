@@ -101,39 +101,61 @@ function generateNormals(vertices) {
 	return normals;
 }
 
+const shapeArray = [
+	 // Cube (+X, -X, +Y, -Y, +Z, -Z)
+	 0.5, -0.5,  0.5,    0.5, -0.5, -0.5,    0.5,  0.5, -0.5,    0.5, -0.5,  0.5,    0.5,  0.5, -0.5,    0.5,  0.5,  0.5,
+	-0.5, -0.5, -0.5,   -0.5, -0.5,  0.5,   -0.5,  0.5,  0.5,   -0.5, -0.5, -0.5,   -0.5,  0.5,  0.5,   -0.5,  0.5, -0.5,
+	-0.5,  0.5,  0.5,    0.5,  0.5,  0.5,    0.5,  0.5, -0.5,   -0.5,  0.5,  0.5,    0.5,  0.5, -0.5,   -0.5,  0.5, -0.5,
+	-0.5, -0.5, -0.5,    0.5, -0.5, -0.5,    0.5, -0.5,  0.5,   -0.5, -0.5, -0.5,    0.5, -0.5,  0.5,   -0.5, -0.5,  0.5,
+	-0.5, -0.5,  0.5,    0.5, -0.5,  0.5,    0.5,  0.5,  0.5,   -0.5, -0.5,  0.5,    0.5,  0.5,  0.5,   -0.5,  0.5,  0.5,
+	 0.5, -0.5, -0.5,   -0.5, -0.5, -0.5,   -0.5,  0.5, -0.5,    0.5, -0.5, -0.5,   -0.5,  0.5, -0.5,    0.5,  0.5, -0.5,
+
+	 // Slanted cube (+X, -X, +Y, -Y, +Z, -Z)
+	 0.5, -0.375, -0.5,    0.5,  0.625, -0.5,    0.5,  0.625,  0.5,    0.5, -0.375, -0.5,    0.5,  0.625,  0.5,    0.5,  0.125,  0.5,
+	-0.5, -0.375, -0.5,   -0.5,  0.125,  0.5,   -0.5,  0.625,  0.5,   -0.5, -0.375, -0.5,   -0.5,  0.625,  0.5,   -0.5,  0.625, -0.5,
+	-0.5,  0.625, -0.5,   -0.5,  0.625,  0.5,    0.5,  0.625,  0.5,   -0.5,  0.625, -0.5,    0.5,  0.625,  0.5,    0.5,  0.625, -0.5,
+	-0.5, -0.375, -0.5,    0.5, -0.375, -0.5,    0.5,  0.125,  0.5,   -0.5, -0.375, -0.5,    0.5,  0.125,  0.5,   -0.5,  0.125,  0.5,
+	-0.5,  0.125,  0.5,    0.5,  0.125,  0.5,    0.5,  0.625,  0.5,   -0.5,  0.125,  0.5,    0.5,  0.625,  0.5,   -0.5,  0.625,  0.5,
+	-0.5, -0.375, -0.5,   -0.5,  0.625, -0.5,    0.5,  0.625, -0.5,   -0.5, -0.375, -0.5,    0.5,  0.625, -0.5,    0.5, -0.375, -0.5,
+
+	 // Slanted cube (+X, -X, +Y, -Y, +Z, -Z)
+	 0.5, -0.375, -0.5,    0.5,  0.625,  0.5,    0.5,  0.125,  0.5,    0.5, -0.375, -0.5,    0.5,  0.125, -0.5,    0.5,  0.625,  0.5,
+	-0.5, -0.375, -0.5,   -0.5,  0.125,  0.5,   -0.5,  0.625,  0.5,   -0.5, -0.375, -0.5,   -0.5,  0.625,  0.5,   -0.5,  0.125, -0.5,
+	-0.5,  0.125, -0.5,   -0.5,  0.625,  0.5,    0.5,  0.625,  0.5,   -0.5,  0.125, -0.5,    0.5,  0.625,  0.5,    0.5,  0.125, -0.5,
+	-0.5, -0.375, -0.5,    0.5, -0.375, -0.5,    0.5,  0.125,  0.5,   -0.5, -0.375, -0.5,    0.5,  0.125,  0.5,   -0.5,  0.125,  0.5, 
+	-0.5,  0.125,  0.5,    0.5,  0.125,  0.5,    0.5,  0.625,  0.5,   -0.5,  0.125,  0.5,    0.5,  0.625,  0.5,   -0.5,  0.625,  0.5, 
+	-0.5, -0.375, -0.5,   -0.5,  0.125, -0.5,    0.5,  0.125, -0.5,   -0.5, -0.375, -0.5,    0.5,  0.125, -0.5,    0.5, -0.375, -0.5 
+];
+
 const cylinderVerts = makeUnitCylinder(8);
+const cylinder16Verts = makeUnitCylinder(16);
 
 const CUBE_OFFSET = 0;
-const CYLINDER_OFFSET = 33;
-const SPHERE_OFFSET = 33 + (cylinderVerts.length / 3);
-const shapeArray = [
-	// Cube (+Z, -Z, -X, +X, +Y, -Y)
-	-0.5, -0.5,  0.5,   0.5, -0.5,  0.5,   0.5,  0.5,  0.5,   -0.5, -0.5,  0.5,   0.5,  0.5,  0.5,   -0.5,  0.5,  0.5,
-	0.5, -0.5, -0.5,   -0.5, -0.5, -0.5,   -0.5,  0.5, -0.5,   0.5, -0.5, -0.5,   -0.5,  0.5, -0.5,   0.5,  0.5, -0.5,
-	-0.5, -0.5, -0.5,   -0.5, -0.5,  0.5,   -0.5,  0.5,  0.5,   -0.5, -0.5, -0.5,   -0.5,  0.5,  0.5,   -0.5,  0.5, -0.5,
-	0.5, -0.5,  0.5,   0.5, -0.5, -0.5,   0.5,  0.5, -0.5,   0.5, -0.5,  0.5,   0.5,  0.5, -0.5,   0.5,  0.5,  0.5,
-	-0.5,  0.5,  0.5,   0.5,  0.5,  0.5,   0.5,  0.5, -0.5,   -0.5,  0.5,  0.5,   0.5,  0.5, -0.5,   -0.5,  0.5, -0.5,
-	-0.5, -0.5, -0.5,   0.5, -0.5, -0.5,   0.5, -0.5,  0.5,   -0.5, -0.5, -0.5,   0.5, -0.5,  0.5,   -0.5, -0.5,  0.5
-];
+const SLANT_OFFSET = 36;
+const RAMP_OFFSET = 72;
+const CYLINDER_OFFSET = (shapeArray.length / 3);
 shapeArray.push(...cylinderVerts);
+const CYLINDER16_OFFSET = (shapeArray.length / 3);
+shapeArray.push(...cylinder16Verts);
+
 const normalArray = generateNormals(shapeArray);
 
 // shape interface
 export default class Shape {
 	static vBuffer = null;
-	static vertexData = null;
+	static vertexData = shapeArray;
 	static vertexCount = 0;
 	static vertexOffset = 0;
 
 	static nBuffer = null;
-	static normalData = null;
+	static normalData = normalArray;
 
 	static initSharedBuffer() {
 		if (this.vBuffer) return;
 		if (!this.vertexData)
 			throw new Error(`${this.name}: vertexData not defined`);
 
-		const GL = window.gl;
+		const GL = window.GL;
 		this.vBuffer = GL.createBuffer();
 		GL.bindBuffer(GL.ARRAY_BUFFER, this.vBuffer);
 		GL.bufferData(
@@ -163,12 +185,12 @@ export default class Shape {
 
 	setColour() {
 		const [r, g, b, a] = this.colour;
-		window.gl.uniform4f(window.u_FragColor, r, g, b, a);
+		window.GL.uniform4f(window.u_FragColor, r, g, b, a);
 	}
 
 	render() {
 		this.setColour();
-		const GL = window.gl;
+		const GL = window.GL;
 		const C = this.constructor;
 
 		GL.uniformMatrix4fv(
@@ -190,15 +212,24 @@ export default class Shape {
 }
 
 export class Cube extends Shape {
-	static vertexData = shapeArray;
 	static vertexCount = 36;
 	static vertexOffset = CUBE_OFFSET;
-	static normalData = normalArray;
+}
+
+export class SlantedCube extends Cube {
+	static vertexOffset = SLANT_OFFSET;
+}
+
+export class Ramp extends Cube {
+	static vertexOffset = RAMP_OFFSET;
 }
 
 export class Cylinder extends Shape {
-	static vertexData = shapeArray;
 	static vertexCount = (cylinderVerts.length / 3);
-	static vertexOffset = CUBE_OFFSET + Cube.vertexCount;
-	static normalData = normalArray;
+	static vertexOffset = CYLINDER_OFFSET;
+}
+
+export class Cylinder16 extends Cylinder {
+	static vertexCount = (cylinder16Verts.length / 3);
+	static vertexOffset = CYLINDER16_OFFSET;
 }

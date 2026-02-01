@@ -114,9 +114,9 @@ export default class Transform {
 	 */
 	getWorldPosition() {
 		return [
-			this.worldMatrix.elements[3],
-			this.worldMatrix.elements[7],
-			this.worldMatrix.elements[11]
+			this.worldMatrix.elements[12],
+			this.worldMatrix.elements[13],
+			this.worldMatrix.elements[14]
 		];
 	}
 
@@ -143,5 +143,32 @@ export default class Transform {
 			this.scale.slice(),
 			this.parent
 		);
+	}
+
+	static getHierarchyGraph(rootTransform) {
+		const nodes = [];
+		const edges = [];
+		
+		function traverse(transform) {
+			const pos = transform.getWorldPosition();
+			nodes.push({ transform, position: pos });
+			
+			if (transform.parent) {
+				const parentPos = transform.parent.getWorldPosition();
+				edges.push({
+					from: parentPos,
+					to: pos,
+					parent: transform.parent,
+					child: transform
+				});
+			}
+			
+			for (const child of transform.children) {
+				traverse(child);
+			}
+		}
+		
+		traverse(rootTransform);
+		return { nodes, edges };
 	}
 }
