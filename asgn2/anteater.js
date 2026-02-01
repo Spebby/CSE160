@@ -32,7 +32,7 @@ export default class Anteater {
 		let wTrans, wRot, wScale;
 
 		// Build the anteater from sticks in a shed
-		const pelvis = this.pelvis = new Transform([0, 0, 0], [-5, 0, 0]);
+		const pelvis = this.pelvis = new Transform([0, 1.5, 0], [-2, 0, 0], [1, 1, 1], transform);
 		const chestTransform = new Transform([0, 0.1, 1], [0, 0, 0], [0.75, 1.25, 2.5], pelvis);
 		const lThigh = this.lThigh = new Transform([0.5, -0.1, 0], [0, 0, 0], [0.5, 1.25, 0.75], pelvis);
 		const rThigh = this.rThigh = lThigh.clone().translate(-1, 0, 0);
@@ -54,7 +54,7 @@ export default class Anteater {
 		iM = lShin.worldMatrix.clone().invert();
 		wScale = iM.multiplyVector4(new Vector4([1, 1, 1, 1])).elements;
 
-		const lFoot = this.lFoot = new Transform([0, -0.5, 0.5], [5, 0, 0], [1.1 * wScale[0], 0.1 * wScale[1], 1.25 * wScale[2]], lShin);
+		const lFoot = this.lFoot = new Transform([0, -0.5, 0.5], [2.5, 0, 0], [1.1 * wScale[0], 0.1 * wScale[1], 1.25 * wScale[2]], lShin);
 		const rFoot = this.rFoot = lFoot.clone().setParent(rShin);
 
 		// L&R Foot

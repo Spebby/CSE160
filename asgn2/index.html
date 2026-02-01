@@ -58,14 +58,42 @@ redirect_from:
 							<label for="RES_MULT" class="form-label">Resolution Multiplier</label>
 							<input type="range" class="form-range" id="RES_MULT" min="0.05" max="2" value="1" step="0.05">
 						</div>
+						<div class="col-md-3 text-center">
+							<label for="MOVE_SPEED" class="form-label">Camera Speed</label>
+							<input type="range" class="form-range" id="MOVE_SPEED" min="0.001" max="1" value="0.1" step="0.005">
+						</div>
+						<div class="col-md-3 text-center">
+							<label for="invX" class="form-label">Invert X</label>
+							<input type="checkbox" class="form-input" id="invX">
+						</div>
+						<div class="col-md-3 text-center">
+							<label for="invY" class="form-label">Invert Y</label>
+							<input type="checkbox" class="form-input" id="invY">
+						</div>
 					</div>
 				</div>
 
 				<!-- Drawing Mode -->
 				<div class="mb-4">
-					<label class="form-label fw-semibold d-block">Drawing Mode:</label>
+					<label class="form-label fw-semibold d-block">Animation Controls:</label>
 					<div></div>
 				</div>
+			</div>
+
+
+
+			<div class="mb-3 mx-3">
+				<h5>Controls</h5>
+				<ul class="list-unstyled mb-2">
+					<li><strong>Orbit:</strong> Click and move with mouse</li>
+					<li><strong>Tracking & Free:</strong> WASD + Q / E for vertical movement</li>
+				</ul>
+				<p class="small text-muted mb-1">
+					What's with tracking? I had originally envisioned the animal moving around more, so you'd maybe want to keep the camera stationary while the animal moved. I moved away from this concept but left the code in just in case.  
+					Another tidbit: the orbital camera originally supported panning, but I ultimately decided against this, as it felt awkward and there was no simple "follow the animal as it moves" option.
+
+					As a result of this, the conversions between the types are a bit nasty in code, primarily because I wanted to preserve the exact orbit & tracking views when switching to free cam. I attempted this somewhat for the other way around, but as free cam can have angles that are impossible for tracking or orbit to have, it's not as seamless.
+				</p>
 			</div>
 		</div>
 	</div>
