@@ -255,20 +255,6 @@ export class AnimMan {
 
 	// return array of queued animation names
 	getQueueInfo() {
-		const info = [];
-		const tempQueue = [];
-	
-		// drain & restore queue
-		while (this.#queue.length > 0) {
-			const anim = this.#queue.dequeue();
-			tempQueue.push(anim);
-			info.push(anim);
-		}
-		
-		for (const anim of tempQueue) {
-			this.#queue.enqueue(anim);
-		}
-		
 		return this.#queue.toList();
 	}
 }
