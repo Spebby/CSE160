@@ -1,0 +1,278 @@
+---
+title: Block Animals
+permalink: /asgn2/
+redirect_from:
+  - /Asgn2/
+  - /a2/
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>{{ page.title }}</title>
+	{% include og-meta.html %}
+	{% include common-head.html %}
+</head>
+<body data-bs-theme="dark" class="bg text-light py-4">
+	<!--Canvas-->
+	<div class="mb-4 mx-4">
+		<canvas
+			id="webgl"
+			class="w-100 d-block border border-primary mx-auto"
+			width="1920" 
+			height="1080"
+			style="position: relative; z-index: 1; pointer-events: auto; height: 700px; background: #000; max-width: 100%;"
+		></canvas>
+	</div>
+
+	<div class="container">
+		<!-- Controls Card -->
+		<div class="card shadow-sm">
+			<div class="card-body">
+				<span class="d-flex gap-2">
+					<p id="profMeasure"></p>
+					<p id="resMeasure"></p>
+				</span>
+				<div class="hidden" id="debugPanel">
+				<p id="animDebug"></p>
+				<p id="rigDebug"></p>
+				</div>
+
+				<!-- Camera Settings -->
+				<div class="mb-4">
+					<label class="form-label fw-semibold">Camera Settings:</label>
+					<div class="row row-cols-2 row-cols-md-4 g-4 align-items-center">
+						<div id="camMode" class="btn-group" role="group" aria-label="Camera Mode">
+							<input type="radio" class="btn-check" name="mode" id="mTrack" value="TRACK">
+							<label class="btn btn-outline-primary" for="mTrack">Tracking</label>
+							<input type="radio" class="btn-check" name="mode" id="mFree" value="FREE">
+							<label class="btn btn-outline-primary" for="mFree">Free</label>
+							<input type="radio" class="btn-check" name="mode" id="mOrbit" value="ORBIT" checked>
+							<label class="btn btn-outline-primary" for="mOrbit">Orbit</label>
+							<button id="mPause" class="btn btn-outline-primary" style="min-width: 95px;">Pause</button>
+						</div>
+
+						<div class="col-md-3 text-center">
+							<label for="FOV" class="form-label">FOV</label>
+							<input type="range" class="form-range" id="FOV" min="1" max="180" value="70">
+						</div>
+						<div class="col-md-3 text-center">
+							<label for="RES_MULT" class="form-label">Resolution Multiplier</label>
+							<input type="range" class="form-range" id="RES_MULT" min="0.05" max="2" value="1" step="0.05">
+						</div>
+						<div class="col-md-3 text-center">
+							<label for="MOVE_SPEED" class="form-label">Camera Speed</label>
+							<input type="range" class="form-range" id="MOVE_SPEED" min="0.1" max="50" value="8" step="0.5">
+						</div>
+						<div class="col-md-3 text-center">
+							<label for="invX" class="form-label">Invert X</label>
+							<input type="checkbox" class="form-input" id="invX">
+						</div>
+						<div class="col-md-3 text-center">
+							<label for="invY" class="form-label">Invert Y</label>
+							<input type="checkbox" class="form-input" id="invY">
+						</div>
+						<div class="col-md-3 text-center">
+							<label for="mDebug" class="form-label">Debug</label>
+							<input type="checkbox" class="form-input" id="mDebug">
+						</div>
+					</div>
+				</div>
+
+				<!-- User Anim Controls -->
+				<div class="mb-4">
+					<label class="form-label fw-semibold d-block">Animation Controls:</label>
+					<div class="row row-cols-2 row-cols-md-4 g-4 align-items-center">
+						<div class="col-md-3">
+							<div class="text-center">
+								<label class="form-label">Head</label>
+							</div>
+							<div class="d-flex align-items-center mb-2">
+								<span class="me-2" style="width:20px;">X:</span>
+								<input type="range" class="form-range flex-grow-1" id="headX" min="-90" max="90" value="0" step="0.01">
+							</div>
+
+							<div class="d-flex align-items-center mb-2">
+								<span class="me-2" style="width:20px;">Y:</span>
+								<input type="range" class="form-range flex-grow-1" id="headY" min="-90" max="90" value="0" step="0.01">
+							</div>
+
+							<div class="d-flex align-items-center mb-2">
+								<span class="me-2" style="width:20px;">Z:</span>
+								<input type="range" class="form-range flex-grow-1" id="headZ" min="-90" max="90" value="0" step="0.01">
+							</div>
+						</div>
+
+						<div class="col-md-3">
+							<div class="text-center">
+								<label class="form-label">Tail A</label>
+							</div>
+							<div class="d-flex align-items-center mb-2">
+								<span class="me-2" style="width:20px;">X:</span>
+								<input type="range" class="form-range flex-grow-1" id="tailAX" min="-90" max="90" value="0" step="0.01">
+							</div>
+
+							<div class="d-flex align-items-center mb-2">
+								<span class="me-2" style="width:20px;">Y:</span>
+								<input type="range" class="form-range flex-grow-1" id="tailAY" min="-90" max="90" value="0" step="0.01">
+							</div>
+
+							<div class="d-flex align-items-center mb-2">
+								<span class="me-2" style="width:20px;">Z:</span>
+								<input type="range" class="form-range flex-grow-1" id="tailAZ" min="-90" max="90" value="0" step="0.01">
+							</div>
+						</div>
+
+						<div class="col-md-3">
+							<div class="text-center">
+								<label class="form-label">Tail B</label>
+							</div>
+							<div class="d-flex align-items-center mb-2">
+								<span class="me-2" style="width:20px;">X:</span>
+								<input type="range" class="form-range flex-grow-1" id="tailBX" min="-90" max="90" value="0" step="0.01">
+							</div>
+
+							<div class="d-flex align-items-center mb-2">
+								<span class="me-2" style="width:20px;">Y:</span>
+								<input type="range" class="form-range flex-grow-1" id="tailBY" min="-90" max="90" value="0" step="0.01">
+							</div>
+
+							<div class="d-flex align-items-center mb-2">
+								<span class="me-2" style="width:20px;">Z:</span>
+								<input type="range" class="form-range flex-grow-1" id="tailBZ" min="-90" max="90" value="0" step="0.01">
+							</div>
+						</div>
+
+						<!--Root-->
+						<div class="col-md-3 d-flex flex-column gap-2">
+							<div class="text-center">
+								<label for="pivotY" class="form-label">Pivot Yaw</label>
+								<input type="range" class="form-range" id="pivotY" min="-180" max="180" value="0" step="0.01">
+							</div>
+
+							<div class="text-center">
+								<label for="pelvisX" class="form-label">Pelvis Pitch</label>
+								<input type="range" class="form-range" id="pelvisX" min="-90" max="15" value="-2" step="0.01">
+							</div>
+						</div>
+
+
+						<!--Left Arm-->
+						<div class="col-md-3 d-flex flex-column gap-2">
+							<div class="text-center">
+								<label for="lBicepX" class="form-label">Left Bicep Pitch</label>
+								<input type="range" class="form-range" id="lBicepX" min="-180" max="180" value="0" step="0.01">
+							</div>
+
+							<div class="text-center">
+								<label for="lBicepY" class="form-label">Left Bicep Yaw</label>
+								<input type="range" class="form-range" id="lBicepY" min="-90" max="90" value="-2" step="0.01">
+							</div>
+
+							<div class="text-center">
+								<label for="lBicepZ" class="form-label">Left Bicep Roll</label>
+								<input type="range" class="form-range" id="lBicepZ" min="-90" max="90" value="-2" step="0.01">
+							</div>
+						</div>
+						<div class="col-md-3 text-center">
+							<label for="lForearmX" class="form-label">Left Forearm Pitch</label>
+							<input type="range" class="form-range" id="lForearmX" min="-90" max="90" value="0" step="0.01">
+						</div>
+						<div class="col-md-3 text-center">
+							<label for="lHandX" class="form-label">Left Hand Pitch</label>
+							<input type="range" class="form-range" id="lHandX" min="-90" max="90" value="0" step="0.01">
+						</div>
+
+						<!--Right Arm-->
+						<div class="col-md-3 d-flex flex-column gap-2">
+							<div class="text-center">
+								<label for="rBicepX" class="form-label">Right Bicep Pitch</label>
+								<input type="range" class="form-range" id="rBicepX" min="-180" max="180" value="0" step="0.01">
+							</div>
+
+							<div class="text-center">
+								<label for="rBicepY" class="form-label">Right Bicep Yaw</label>
+								<input type="range" class="form-range" id="rBicepY" min="-180" max="180" value="-2" step="0.01">
+							</div>
+
+							<div class="text-center">
+								<label for="rBicepZ" class="form-label">Right Bicep Roll</label>
+								<input type="range" class="form-range" id="rBicepZ" min="-180" max="180" value="-2" step="0.01">
+							</div>
+						</div>
+						<div class="col-md-3 text-center">
+							<label for="rForearmX" class="form-label">Right Forearm Pitch</label>
+							<input type="range" class="form-range" id="rForearmX" min="-90" max="90" value="0" step="0.01">
+						</div>
+						<div class="col-md-3 text-center">
+							<label for="rHandX" class="form-label">Right Hand Pitch</label>
+							<input type="range" class="form-range" id="rHandX" min="-90" max="90" value="0" step="0.01">
+						</div>
+
+						<!--Left Leg-->
+						<div class="col-md-3 text-center">
+							<label for="lThighX" class="form-label">Left Thigh Pitch</label>
+							<input type="range" class="form-range" id="lThighX" min="-90" max="90" value="0" step="0.01">
+							</div>
+						<div class="col-md-3 text-center">
+							<label for="lShinX" class="form-label">Left Shin Pitch</label>
+							<input type="range" class="form-range" id="lShinX" min="-90" max="90" value="0" step="0.01">
+						</div>
+						<div class="col-md-3 text-center">
+							<label for="lFootX" class="form-label">Left Foot Pitch</label>
+							<input type="range" class="form-range" id="lFootX" min="-90" max="90" value="0" step="0.01">
+						</div>
+
+						<!--Right Leg-->
+						<div class="col-md-3 text-center">
+							<label for="rThighX" class="form-label">Right Thigh Pitch</label>
+							<input type="range" class="form-range" id="rThighX" min="-90" max="90" value="0" step="0.01">
+						</div>
+						<div class="col-md-3 text-center">
+							<label for="rShinX" class="form-label">Right Shin Pitch</label>
+							<input type="range" class="form-range" id="rShinX" min="-90" max="90" value="0" step="0.01">
+						</div>
+						<div class="col-md-3 text-center">
+							<label for="rFootX" class="form-label">Right Foot Pitch</label>
+							<input type="range" class="form-range" id="rFootX" min="-90" max="90" value="0" step="0.01">
+						</div>
+					<div>
+				</div>
+			</div>
+
+			<div class="mb-3 mx-3">
+				<h5>Controls</h5>
+				<ul class="list-unstyled mb-2">
+					<li><strong>Orbit:</strong> Click and move with mouse</li>
+					<li><strong>Tracking & Free:</strong> WASD + Q / E for vertical movement</li>
+				</ul>
+				<span class="small text-muted mb-1">
+				<p>
+					What's with tracking? I had originally envisioned the animal moving around more, so you'd maybe want to keep the camera stationary while the animal moved. I moved away from this concept but left the code in just in case.  
+					Another tidbit: the orbital camera originally supported panning, but I ultimately decided against this, as it felt awkward and there was no simple "follow the animal as it moves" option. As a result of this, the conversions between the types are a bit nasty in code, primarily because I wanted to preserve the exact orbit & tracking views when switching to free cam. I attempted this somewhat for the other way around, but as free cam can have angles that are impossible for tracking or orbit to have, it's not as seamless.
+				</p>
+				<p>
+					The debug feature is another feature that requires a bit of explanation. I added it in order to be able to visualise the skeleton's pivots, and visualise the centre of meshes. Red nodes represent parent transforms, and green nodes represent end nodes in a hierarchy. All the green nodes you see are mesh transforms, not intended for use in animation. The model was designed with the pelvis as the root of the mesh. For easier global manipulation, a central "transform" was added, which the pelvis is a child of. So while the pelvis technically isn't the root, it's still the rig's anatomical root.
+				</p>
+				</span>
+			</div>
+		</div>
+	</div>
+	<!--Bootstrapping-->
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+	<script>
+		// orbit mode as default
+		window.addEventListener('DOMContentLoaded', () => {
+			const orbitInput = document.querySelector('#camMode input[value="orbit"]');
+			orbitInput.checked = true;
+		});
+	</script>
+	<script type="module" src="asgn2.js"></script>
+	<script src="../assets/lib/cuon-matrix-cse160.js"></script>
+	<script src="../assets/lib/cuon-utils.js"></script>
+	<script src="../assets/lib/webgl-utils.js"></script>
+	<script src="../assets/lib/webgl-debug.js"></script>
+</body>
+</html>

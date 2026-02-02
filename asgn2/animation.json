@@ -1,0 +1,259 @@
+{
+	"walk": {
+		"duration": 1.0,
+		"loop": true,
+		"seamlessLoop": true,
+		"keyframes": [
+			{
+				"time": 0.0,
+				"transforms": {
+					"lThigh": { "rotation": [20, 0, 0] },
+					"rThigh": { "rotation": [-20, 0, 0] },
+					"lBicep": { "rotation": [-15, 0, 0] },
+					"rBicep": { "rotation": [15, 0, 0] }
+				}
+			},
+			{
+				"time": 0.5,
+				"transforms": {
+					"lThigh": { "rotation": [-20, 0, 0] },
+					"rThigh": { "rotation": [20, 0, 0] },
+					"lBicep": { "rotation": [15, 0, 0] },
+					"rBicep": { "rotation": [-15, 0, 0] }
+				}
+			},
+			{
+				"time": 1.0,
+				"transforms": {
+					"lThigh": { "rotation": [20, 0, 0] },
+					"rThigh": { "rotation": [-20, 0, 0] },
+					"lBicep": { "rotation": [-15, 0, 0] },
+					"rBicep": { "rotation": [15, 0, 0] }
+				}
+			}
+		]
+	},
+	"idle": {
+		"duration": 7.0,
+		"loop": true,
+		"keyframes": [
+			{
+				"time": 0.0,
+				"transforms": {
+					"head": { "rotation": [0, 0, 0] },
+					"lBicep": { "rotation": [3, 0, 0] },
+					"rBicep": { "rotation": [3, 0, 0] },
+					"lForearm": { "rotation": [-7, 0, 0] },
+					"rForearm": { "rotation": [-7, 0, 0] },
+
+					"lThigh": { "rotation": [0, 0, 0] },
+					"rThigh": { "rotation": [0, 0, 0] },
+					"lShin": { "rotation": [12, -0.2, 0] },
+					"rShin": { "rotation": [12, -0.2, 0] }
+				}
+			},
+			{
+				"time": 1.0,
+				"transforms": {
+					"head": { "rotation": [5, 10, 0] }
+				}
+			},
+			{
+				"time": 3.0,
+				"transforms": {
+					"head": { "rotation": [5, 10, 0] }
+				}
+			},
+			{
+				"time": 4.0,
+				"transforms": {
+					"head": { "rotation": [5, -10, 0] }
+				}
+			},
+			{
+				"time": 6.0,
+				"transforms": {
+					"head": { "rotation": [5, 10, 0] }
+				}
+			},
+			{
+				"time": 7.0,
+				"transforms": {
+					"head": { "rotation": [0, 0, 0] },
+					"lBicep": { "rotation": [3, 0, 0] },
+					"rBicep": { "rotation": [3, 0, 0] },
+					"lForearm": { "rotation": [-7, 0, 0] },
+					"rForearm": { "rotation": [-7, 0, 0] },
+					"lThigh": { "rotation": [0, 0, 0] },
+					"rThigh": { "rotation": [0, 0, 0] },
+					"lShin": { "rotation": [12, -0.2, 0] },
+					"rShin": { "rotation": [12, -0.2, 0] }
+				}
+			}
+		]
+	},
+	"guard": {
+		"duration": 8.15,
+		"loop": false,
+		"disallowInterrupt": true,
+		"keyframes": [
+			{
+				"time": 0.0,
+				"transforms": {
+					"head": { "rotation": [15, 0, 0] },
+					"pelvis": { "rotation": [-2.0, 0, 0] },
+					"tailA": { "rotation": [3, 180, 0] },
+					"tailB": { "rotation": [5.0, 0,  0] },
+
+					"lBicep": { "rotation": [3, 0, 0] },
+					"rBicep": { "rotation": [3, 0, 0] },
+					"lForearm": { "rotation": [-7, 0, 0] },
+					"rForearm": { "rotation": [-7, 0, 0] },
+					"lThigh": { "rotation": [0, 0, 0] },
+					"rThigh": { "rotation": [0, 0, 0] },
+					"lShin": { "rotation": [12, -0.2, 0] },
+					"rShin": { "rotation": [12, -0.2, 0] }
+				}
+			},
+			{
+				"time": 0.55,
+				"transforms": {
+					"head": { "rotation": [75.5, 0, 0] },
+					"pelvis": { "rotation": [-70, 0, 0] },
+
+					"lBicep": { "rotation": [-100, -9.5, 90] },
+					"rBicep": { "rotation": [-100,  9.5, -90] },
+					"lForearm": { "rotation": [15, 0, 0] },
+					"rForearm": { "rotation": [15, 0, 0] },
+					"lHand": { "rotation": [-35, 0, 0] },
+					"rHand": { "rotation": [-35, 0, 0] },
+
+					"lThigh": { "rotation": [45, 0, 0] },
+					"rThigh": { "rotation": [45, 0, 0] },
+					"lShin": { "rotation": [33, 0, 0] },
+					"rShin": { "rotation": [33, 0, 0] },
+					"tailA": { "rotation": [10, 180, 0] },
+					"tailB": { "rotation": [-45, 0,  0] }
+				}
+			},
+			{
+				"time": 1.5,
+				"transforms": {
+					"head": { "rotation": [82.5, 0, 0] },
+					"pelvis": { "rotation": [-72, 0, 0] },
+
+					"lBicep": { "rotation": [-101, -8.5, 90] },
+					"rBicep": { "rotation": [-101,  8.5, -90] },
+					"lForearm": { "rotation": [25, 0, 0] },
+					"rForearm": { "rotation": [25, 0, 0] }
+				}
+			},
+			{
+				"time": 3.5,
+				"transforms": {
+					"head": { "rotation": [73.5, 0, 0] },
+					"pelvis": { "rotation": [-71.2, 0, 0] },
+
+					"lBicep": { "rotation": [-100, -12.5, 90] },
+					"rBicep": { "rotation": [-100,  12.5, -90] },
+					"lForearm": { "rotation": [10, 0, 0] },
+					"rForearm": { "rotation": [10, 0, 0] }
+				}
+			},
+			{
+				"time": 5,
+				"transforms": {
+					"head": { "rotation": [86.5, 0, 0] },
+					"pelvis": { "rotation": [-69, 0, 0] },
+
+					"lBicep": { "rotation": [-100, -9.5, 90] },
+					"rBicep": { "rotation": [-100,  9.5, -90] },
+					"lForearm": { "rotation": [25, 0, 0] },
+					"rForearm": { "rotation": [25, 0, 0] }
+				}
+			},
+			{
+				"time": 6.5,
+				"transforms": {
+					"head": { "rotation": [78.5, 0, 0] },
+					"pelvis": { "rotation": [-72, 0, 0] },
+
+					"lBicep": { "rotation": [-100, -12.5, 90] },
+					"rBicep": { "rotation": [-100,  12.5, -90] },
+					"lForearm": { "rotation": [30, 0, 0] },
+					"rForearm": { "rotation": [30, 0, 0] }
+				}
+			},
+			{
+				"time": 7.0,
+				"transforms": {
+					"head": { "rotation": [75.5, 0, 0] },
+					"pelvis": { "rotation": [-70, 0, 0] },
+					"lBicep": { "rotation": [-100, -9.5, 90] },
+					"rBicep": { "rotation": [-100,  9.5, -90] },
+					"lForearm": { "rotation": [15, 0, 0] },
+					"rForearm": { "rotation": [15, 0, 0] },
+					"lHand": { "rotation": [-35, 0, 0] },
+					"rHand": { "rotation": [-35, 0, 0] },
+
+					"lThigh": { "rotation": [45, 0, 0] },
+					"rThigh": { "rotation": [45, 0, 0] },
+					"lShin": { "rotation": [33, 0, 0] },
+					"rShin": { "rotation": [33, 0, 0] },
+					"tailA": { "rotation": [10, 180, 0] },
+					"tailB": { "rotation": [-45, 0,  0] }
+				}
+			},
+			{
+				"time": 7.25,
+				"transforms": {
+					"head": { "rotation": [65.5, 0, 0] },
+					"pelvis": { "rotation": [-65, 0, 0] },
+					"lBicep": { "rotation": [2.5, 35, 47] },
+					"rBicep": { "rotation": [-2.5, -35, -47] }
+				}
+			},
+			{
+				"time": 7.65,
+				"transforms": {
+					"head": { "rotation": [15, 0, 0] },
+					"pelvis": { "rotation": [5.0, 0, 0] },
+					"tailA": { "rotation": [3, 180, 0] },
+					"tailB": { "rotation": [5.0, 0,  0] },
+
+					"lBicep": { "rotation": [20.5, -2, -2] },
+					"rBicep": { "rotation": [20.5, -2, -2] },
+					"lForearm": { "rotation": [-62, 0, 0] },
+					"rForearm": { "rotation": [-62, 0, 0] },
+					"lHand": { "rotation": [-7, 0, 0] },
+					"rHand": { "rotation": [-7, 0, 0] },
+
+					"lThigh": { "rotation": [0, 0, 0] },
+					"rThigh": { "rotation": [0, 0, 0] },
+					"lShin": { "rotation": [12, -0.2, 0] },
+					"rShin": { "rotation": [12, -0.2, 0] }
+				}
+			},
+			{
+				"time": 8.15,
+				"transforms": {
+					"head": { "rotation": [2, 0, 0] },
+					"pelvis": { "rotation": [-2.0, 0, 0] },
+					"tailA": { "rotation": [3, 180, 0] },
+					"tailB": { "rotation": [5.0, 0,  0] },
+
+					"lBicep": { "rotation": [3, 0, 0] },
+					"rBicep": { "rotation": [3, 0, 0] },
+					"lForearm": { "rotation": [-7, 0, 0] },
+					"rForearm": { "rotation": [-7, 0, 0] },
+					"lThigh": { "rotation": [0, 0, 0] },
+					"rThigh": { "rotation": [0, 0, 0] },
+					"lShin": { "rotation": [12, -0.2, 0] },
+					"rShin": { "rotation": [12, -0.2, 0] },
+					"lHand": { "rotation": [-5.5, 0, 0] },
+					"rHand": { "rotation": [-5.5, 0, 0] }
+				}
+			}
+		]
+	}
+}
