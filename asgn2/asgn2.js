@@ -1,18 +1,11 @@
 // Asgn2.js
 import { Cube, Cylinder16 } from './shapes.js';
+import { AnimMan } from './animation.js';
 import Transform from './transform.js';
 import Anteater from './anteater.js';
 
 const DEG_TO_RAD = Math.PI / 180;
 const RAD_TO_DEG = 180 / Math.PI;
-
-/**
- * TODO:
- * Screenshot mode?
- * Basic AA?
- * Basic normal lighting
- */
-
 
 // Lighting model is based loosely on Blinn Phong.
 // I was inspired to implement lighting after seeing 
@@ -71,6 +64,7 @@ var canvas;
 var GL;
 var ANTEATER;
 var DEBUG;
+var ANT_ANIM;
 
 var W;
 var H;
@@ -99,6 +93,7 @@ var MAX_MOVE_SPEED = 0.1;
 var cameraAngleX = 0;
 var cameraAngleY = 0;
 var cameraDistance = 3;
+const DEFAULT_DISTANCE = 6;
 
 var isDragging = false;
 var lastMouseX = 0;
@@ -114,13 +109,20 @@ var cameraTargetZ = 0;
 
 var keyStates = {};
 
-function main() {
+async function main() {
 	setupWebGL();
-	setupListeners();
 	connectVariablesToGLSL();
 
+	const response = await fetch('./animation.json');
+	const animations = await response.json();
+
 	ANTEATER = new Anteater();
-	// clear colour
+	ANT_ANIM = new AnimMan(ANTEATER, animations);
+
+	setupListeners();
+
+	ANT_ANIM.queueAnim('walk');
+
 	GL.clearColor(0.0, 0.0, 0.0, 1.0);
 	GL.clear(GL.COLOR_BUFFER_BIT | GL.DEPTH_BUFFER_BIT);
 
@@ -135,6 +137,12 @@ function main() {
 	currCamMode = CameraMode[document.querySelector('#camMode input[name="mode"]:checked').value];
 
 	DEBUG = document.getElementById('mDebug').checked;
+
+	cameraDistance = DEFAULT_DISTANCE;
+	cameraAngleX = 15;
+	cameraAngleY = 30;
+
+	[cameraTargetX, cameraTargetY, cameraTargetZ] = getCameraPivot();
 
 	resizeCanvas();
 	requestAnimationFrame(tick);
@@ -166,11 +174,16 @@ function setupWebGL() {
 }
 
 function setupListeners() {
+	setupAnimationListeners();
 	document.getElementById('FOV').addEventListener('input', function() { FOV = this.value; updateProjMatrix(); });
 	document.getElementById('RES_MULT').addEventListener('input', function() { RES_MULT = this.value; resizeCanvas(); });
 	document.getElementById('invX').addEventListener('change', function() { invX = this.checked; })
 	document.getElementById('invY').addEventListener('change', function() { invY = this.checked; })
-	document.getElementById('mDebug').addEventListener('change', function() { DEBUG = this.checked; })
+	document.getElementById('mDebug').addEventListener('change', function() { 
+		DEBUG = this.checked;
+		const debugEl = document.getElementById("debugPanel");
+		debugEl.style.display = DEBUG ? "block" : "none";
+	})
 
 	let pauseButton = document.getElementById('mPause');
 	pauseButton.addEventListener('click', function() {
@@ -205,6 +218,21 @@ function setupListeners() {
 		isDragging = true;
 		lastMouseX = env.clientX;
 		lastMouseY = env.clientY;
+
+		if (env.shiftKey) {
+			// trigger "poke" animation
+			// if i add a couple animations, then do that ig
+
+			// Personally, I dislike quing multiple of the same anim
+			// with a double click. this is a blocker here, instead
+			// of in the anim system. There's technically nothing wrong
+			// with quing it twice
+			const aKey = ANT_ANIM.getActiveAnimation();
+			if (aKey === 'guard') return;
+			ANT_ANIM.interruptAnimQueue('guard');
+			ANT_ANIM.queueAnim('idle');
+			ANT_ANIM.queueAnim('walk');
+		}
 	});
 
 	canvas.addEventListener('mousemove', function(env) {
@@ -235,7 +263,7 @@ function setupListeners() {
 			cameraDistance += env.deltaY * 0.01;
 			cameraDistance = Math.max(0.1, cameraDistance);
 		} else {
-			MOVE_SPEED += env.deltaY * 0.0001;
+			MOVE_SPEED += parseFloat(document.getElementById('MOVE_SPEED').step);
 			MOVE_SPEED = Math.max(0.001, Math.min(MOVE_SPEED, MAX_MOVE_SPEED));
 			document.getElementById('MOVE_SPEED').value = MOVE_SPEED;
 		}
@@ -246,9 +274,13 @@ function setupListeners() {
     });
 }
 
-function writeToHTML(str, id) {
+function writeToHTML(str, id, isHTML = false) {
 	const element = document.getElementById(id);
-	element.textContent = str;
+	if (!isHTML) {
+		element.textContent = str;
+	} else {
+		element.innerHTML = str;
+	}
 
 	if (str === "") {
 		element.classList.add('hidden');
@@ -336,22 +368,32 @@ function click(env) {
 }
 
 function tick() {
-	// TODO: separate sim time from fps.
 	const now = performance.now();
 	const nowSeconds = now / 1000;
-	const dt = now - START_TIME;
+	const dt = (now - START_TIME) / 1000;
 
-	writeToHTML(`ms: ${dt.toFixed(2)} fps: ${(1000/dt).toFixed(2)}`, "profMeasure");
+	writeToHTML(`ms: ${(1000 * dt).toFixed(2)} fps: ${(1000/(1000 * dt)).toFixed(2)}`, "profMeasure");
 	START_TIME = now;
 
 	updateCamera(dt);
 	dispatchAnimations(dt);
 	renderAllShapes(dt);
 	requestAnimationFrame(tick);
+
+	if (DEBUG) {
+		renderBonesDebug();
+		displayAnimQueue();
+		displayRigDebugInfo();
+	}
 }
 
 function dispatchAnimations(dt) {
+	// accept user input & tweak the rig accordingly
+
 	if (IS_PAUSED) return;
+	// dispatch dedicated animation calls. The animator handles this.
+	
+	ANT_ANIM.update(dt);
 }
 
 var lineBuffer;
@@ -360,45 +402,8 @@ function renderAllShapes(dt) {
 	GL.clear(GL.COLOR_BUFFER_BIT | GL.DEPTH_BUFFER_BIT);
 	ANTEATER.render();
 	
-	var ground = new Cylinder16(new Transform([0, -0.05, 0], [0, 0, 0], [5, 0.1, 5]), [0.3, 0.3, 0.3, 0.5].slice());
+	var ground = new Cylinder16(new Transform([0, -0.05, 0], [0, 0, 0], [5, 0.1, 5]), [0.3, 0.3, 0.3, 0.5].slice(), null);
 	ground.render();
-
-	if (DEBUG) {
-		GL.disable(GL.DEPTH_TEST);
-		const graph = Transform.getHierarchyGraph(ANTEATER.transform);
-		const identity = new Matrix4();
-		GL.uniformMatrix4fv(window.u_ModelMatrix, false, identity.elements);
-		GL.bindBuffer(GL.ARRAY_BUFFER, lineBuffer);
-		GL.vertexAttribPointer(window.a_Position, 3, GL.FLOAT, false, 0, 0);
-		GL.enableVertexAttribArray(window.a_Position);
-		
-		const nodeCube = new Cube(new Transform([0, 0, 0], [0, 0, 0], [0.1, 0.1, 0.1]), [1, 0, 0, 1]);
-		
-		// Find leaf nodes (transforms with no children)
-		const leafNodes = new Set(graph.nodes.filter(n => n.transform.children.length === 0).map(n => n.transform));
-		
-		for (const edge of graph.edges) {
-			lineData[0] = edge.from[0];
-			lineData[1] = edge.from[1];
-			lineData[2] = edge.from[2];
-			lineData[3] = edge.to[0];
-			lineData[4] = edge.to[1];
-			lineData[5] = edge.to[2];
-			
-			GL.uniform4f(window.u_FragColor, 1, 1, 0, 1);
-			GL.bufferData(GL.ARRAY_BUFFER, lineData, GL.DYNAMIC_DRAW);
-			GL.drawArrays(GL.LINES, 0, 2);
-		}
-		
-		// Render nodes
-		for (const node of graph.nodes) {
-			nodeCube.transform.setPos(...node.position);
-			// Green for leaf nodes, red for others
-			nodeCube.colour = leafNodes.has(node.transform) ? [0, 1, 0, 1] : [1, 0, 0, 1];
-			nodeCube.render();
-		}
-		GL.enable(GL.DEPTH_TEST);
-	}
 }
 
 // handles updating canvas size when window is resize
@@ -433,7 +438,7 @@ function updateProjMatrix() {
 // A bunch of annoying camera math
 function updateCamera(dt) {
 	const MODE = getMode();
-	const speed = MOVE_SPEED * (dt / 16);
+	const speed = MOVE_SPEED * dt;
 
 	[cameraTargetX, cameraTargetY, cameraTargetZ] = MODE === CameraMode.Orbit ? getCameraPivot() : getCameraPivot();
 	if (MODE === CameraMode.FREE || MODE === CameraMode.TRACK) {
@@ -520,6 +525,7 @@ main();
 
 // Camera helpers
 function getCameraPivot() {
+	if (getMode() == CameraMode.ORBIT) return [0, 2, 0];
 	return ANTEATER.cameraFocus.getWorldPosition();
 }
 
@@ -590,4 +596,175 @@ function dirToAngles(dx, dy, dz) {
 		Math.asin(dy / len) * RAD_TO_DEG,
 		Math.atan2(dx, dz) * RAD_TO_DEG
 	];
+}
+
+function updateBulkRotation(bone, segment, offsetX = 0, offsetY = 0, offsetZ = 0) {
+    const x = parseFloat(document.getElementById(`${segment}X`).value) + offsetX;
+    const y = parseFloat(document.getElementById(`${segment}Y`).value) + offsetY;
+    const z = parseFloat(document.getElementById(`${segment}Z`).value) + offsetZ;
+
+    ANT_ANIM.setUserRotation(bone, [x, y, z]);
+}
+
+function setupAnimationListeners() {
+	['headX', 'headY', 'headZ'].forEach(id => {
+		document.getElementById(id).addEventListener('input', () => {
+			updateBulkRotation('head', 'head');
+		});
+	});
+
+	['tailAX', 'tailAY', 'tailAZ'].forEach(id => {
+		document.getElementById(id).addEventListener('input', () => {
+			updateBulkRotation('tailA', 'tailA', 0, 180, 0);
+		});
+	});
+
+	['tailBX', 'tailBY', 'tailBZ'].forEach(id => {
+		document.getElementById(id).addEventListener('input', () => {
+			updateBulkRotation('tailB', 'tailB');
+		});
+	});
+
+
+	document.getElementById('pivotY').addEventListener('input', function() {
+		const val = parseFloat(this.value);
+		ANT_ANIM.setUserRotation('pivot', [0, val, 0]);
+	});
+
+	document.getElementById('pelvisX').addEventListener('input', function() {
+		const val = parseFloat(this.value);
+		ANT_ANIM.setUserRotation('pelvis', [val, 0, 0]);
+	});
+
+	['lBicepX', 'lBicepY', 'lBicepZ'].forEach(id => {
+		document.getElementById(id).addEventListener('input', () => {
+			updateBulkRotation('lBicep', 'lBicep');
+		});
+	});
+
+	['rBicepX', 'rBicepY', 'rBicepZ'].forEach(id => {
+		document.getElementById(id).addEventListener('input', () => {
+			updateBulkRotation('rBicep', 'rBicep');
+		});
+	});
+
+	document.getElementById('lForearmX').addEventListener('input', function() {
+		const val = parseFloat(this.value);
+		ANT_ANIM.setUserRotation('lForearm', [val, 0, 0]);
+	});
+
+	document.getElementById('rForearmX').addEventListener('input', function() {
+		const val = parseFloat(this.value);
+		ANT_ANIM.setUserRotation('rForearm', [val, 0, 0]);
+	});
+
+	document.getElementById('lHandX').addEventListener('input', function() {
+		const val = parseFloat(this.value);
+		ANT_ANIM.setUserRotation('lHand', [val, 0, 0]);
+	});
+
+	document.getElementById('rHandX').addEventListener('input', function() {
+		const val = parseFloat(this.value);
+		ANT_ANIM.setUserRotation('rHand', [val, 0, 0]);
+	});
+
+	document.getElementById('lThighX').addEventListener('input', function() {
+		const val = parseFloat(this.value);
+		ANT_ANIM.setUserRotation('lThigh', [val, 0, 0]);
+	});
+
+	document.getElementById('rThighX').addEventListener('input', function() {
+		const val = parseFloat(this.value);
+		ANT_ANIM.setUserRotation('rThigh', [val, 0, 0]);
+	});
+
+	document.getElementById('lShinX').addEventListener('input', function() {
+		const val = parseFloat(this.value);
+		ANT_ANIM.setUserRotation('lShin', [val, 0, 0]);
+	});
+
+	document.getElementById('rShinX').addEventListener('input', function() {
+		const val = parseFloat(this.value);
+		ANT_ANIM.setUserRotation('rShin', [val, 0, 0]);
+	});
+
+	document.getElementById('lFootX').addEventListener('input', function() {
+		const val = parseFloat(this.value);
+		ANT_ANIM.setUserRotation('lFoot', [val, 0, 0]);
+	});
+
+	document.getElementById('rFootX').addEventListener('input', function() {
+		const val = parseFloat(this.value);
+		ANT_ANIM.setUserRotation('rFoot', [val, 0, 0]);
+	});
+}
+
+
+
+// a bunch of debug stuff
+function renderBonesDebug() {
+	GL.disable(GL.DEPTH_TEST);
+	const graph = Transform.getHierarchyGraph(ANTEATER.pivot);
+	const identity = new Matrix4();
+	GL.uniformMatrix4fv(window.u_ModelMatrix, false, identity.elements);
+	GL.bindBuffer(GL.ARRAY_BUFFER, lineBuffer);
+	GL.vertexAttribPointer(window.a_Position, 3, GL.FLOAT, false, 0, 0);
+	GL.enableVertexAttribArray(window.a_Position);
+	
+	
+	// Find leaf nodes (transforms with no children)
+	const leafNodes = new Set(graph.nodes.filter(n => n.transform.children.length === 0).map(n => n.transform));
+	for (const edge of graph.edges) {
+		lineData[0] = edge.from[0];
+		lineData[1] = edge.from[1];
+		lineData[2] = edge.from[2];
+		lineData[3] = edge.to[0];
+		lineData[4] = edge.to[1];
+		lineData[5] = edge.to[2];
+		
+		GL.uniform4f(window.u_FragColor, 1, 1, 0, 1);
+		GL.bufferData(GL.ARRAY_BUFFER, lineData, GL.DYNAMIC_DRAW);
+		GL.drawArrays(GL.LINES, 0, 2);
+	}
+	
+	const nodeCube = new Cube(new Transform([0, 0, 0], [0, 0, 0], [0.1, 0.1, 0.1]), [1, 0, 0, 1]);
+	for (const node of graph.nodes) {
+		nodeCube.transform.setPos(...node.position);
+		// Green for leaf nodes, red for others
+		nodeCube.colour = leafNodes.has(node.transform) ? [0, 1, 0, 1] : [1, 0, 0, 1];
+		nodeCube.render();
+	}
+	GL.enable(GL.DEPTH_TEST);
+}
+
+function displayAnimQueue() {
+	const current = ANT_ANIM.getActiveAnimation();
+	const queueInfo = ANT_ANIM.getQueueInfo();
+	
+	let debugText = `Current: ${current || 'none'}`;
+	if (queueInfo.length > 0) {
+		debugText += `\nQueue: [${queueInfo.join(', ')}]`;
+	}
+	
+	writeToHTML(debugText, "animDebug");
+}
+
+// generated w/ chatgpt
+function displayRigDebugInfo() {
+    const rigInfo = ANTEATER.getRigInfo();
+    const bones = Object.keys(rigInfo);
+
+    let debugText = '<div class="row g-2">';
+
+    bones.forEach(name => {
+        const rot = rigInfo[name];
+        debugText += `
+            <div class="col-auto col-sm-6 col-md-4 col-lg-2">
+                <b>${name}</b>: [${rot.map(v => v.toFixed(1)).join(', ')}]
+            </div>
+        `;
+    });
+
+    debugText += '</div>';
+    writeToHTML(debugText, "rigDebug", true);
 }

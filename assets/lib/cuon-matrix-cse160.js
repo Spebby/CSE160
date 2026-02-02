@@ -850,3 +850,47 @@ class Matrix4 {
       return this.dropShadow([normX, normY, normZ, -a], [lightX, lightY, lightZ, 0]);
     };
 }
+
+
+class Queue {
+	#capacity;
+
+	constructor(capacity = 1024) {
+		this.#capacity = capacity;
+		this._data = new Array(capacity);
+		this._head = 0;
+		this._tail = 0;
+		this._size = 0;
+	}
+
+	enqueue(x) {
+		if (this._size === this.#capacity) {
+			throw new Error("Queue full");
+		}
+
+		this._data[this._tail] = x;
+		this._tail = (this._tail + 1) % this.#capacity;
+		this._size++;
+	}
+
+	dequeue() {
+		if (this._size === 0) return undefined;
+
+		const x = this._data[this._head];
+		this._head = (this._head + 1) % this.#capacity;
+		this._size--;
+		return x;
+	}
+
+	get length() {
+		return this._size;
+	}
+
+	toList() {
+		const result = [];
+		for (let i = 0; i < this._size; i++) {
+			result.push(this._data[(this._head + i) % this.#capacity]);
+		}
+		return result;
+	}
+}

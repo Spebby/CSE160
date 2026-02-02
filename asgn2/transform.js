@@ -73,7 +73,7 @@ export default class Transform {
 			this.worldMatrix.copy(m);
 		}
 
-		for (const c of this.children) c.markDirty();
+		for (const c of this.children) c.recomputeCache();
 	}
 
 	addChild(child) {
