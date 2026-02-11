@@ -1,3 +1,16 @@
+# Ruby
+vendor/bundle/
+.bundle/
+
+.jekyll-cache/
+.jekyll-metadata
+
+# Build Artifacts
 _site/
+**/dist/
+**/node_modules/
+node_modules/
+
+# Nix
 .pre-commit-config.yaml
 .nix-profile/

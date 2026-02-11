@@ -1,0 +1,27 @@
+{
+  "name": "cse160",
+  "version": "1.0.0",
+  "description": "CSE160",
+  "private": true,
+  "scripts": {
+    "check": "./scripts/check-deps.sh",
+    "build:ts": "./scripts/build-typescript.sh",
+    "build:jekyll": "JEKYLL_ENV=production bundle exec jekyll build",
+    "build": "./scripts/build.sh",
+    "dev": "./scripts/dev.sh",
+    "dev:asgn3": "./scripts/dev.sh asgn3",
+    "dev:asgn4": "./scripts/dev.sh asgn4",
+    "dev:asgn5": "./scripts/dev.sh asgn5",
+    "serve": "JEKYLL_ENV=production bundle exec jekyll serve --livereload",
+	"clean": "rm -rf _site && find asgn* -type d -name 'dist' -exec rm -rf {} + 2>/dev/null || true"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/spebby/CSE160"
+  },
+  "author": "Thom",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

@@ -1,44 +1,43 @@
-import { Cube, SlantedCube, Ramp, Cylinder } from '../assets/lib/shapes.js';
-import Transform from '../assets/lib/transform.js'
+import { Cube, SlantedCube, Ramp, Cylinder } from '../../assets/lib/shapes.js';
+import Transform from '../../assets/lib/transform.js';
 
-const BODY_COLOUR = [77  / 255, 67  / 255, 57  / 255, 1.0].slice();
-const BODY_DARK   = [36  / 255, 35  / 255, 33  / 255, 1.0].slice();
-const BODY_ALT    = [228 / 255, 215 / 255, 206 / 255, 1.0].slice();
-const HEAD_LIGHT  = [170 / 255, 158 / 255, 146 / 255, 1.0].slice();
-const HEAD_NOSE   = [26  / 255, 34  / 255, 29  / 255, 1.0].slice();
-const TONGUE      = [194 / 255, 170 / 255, 173 / 255, 1.0].slice();
-const CLAWS       = [163 / 255, 163 / 255, 161 / 255, 1.0].slice();
+const BODY_COLOUR = [77  / 255, 67  / 255, 57  / 255, 1.0].slice() as [number, number, number, number];
+const BODY_DARK   = [36  / 255, 35  / 255, 33  / 255, 1.0].slice() as [number, number, number, number];
+const BODY_ALT    = [228 / 255, 215 / 255, 206 / 255, 1.0].slice() as [number, number, number, number];
+const HEAD_LIGHT  = [170 / 255, 158 / 255, 146 / 255, 1.0].slice() as [number, number, number, number];
+const HEAD_NOSE   = [26  / 255, 34  / 255, 29  / 255, 1.0].slice() as [number, number, number, number];
+const TONGUE      = [194 / 255, 170 / 255, 173 / 255, 1.0].slice() as [number, number, number, number];
+const CLAWS       = [163 / 255, 163 / 255, 161 / 255, 1.0].slice() as [number, number, number, number];
 
+type Mesh = Cube | SlantedCube | Ramp | Cylinder;
 export default class Anteater {
-	#meshes = [];
+	#meshes: Mesh[] = [];
 	
-	cameraFocus = null;
-	pivot = null;
-	pelvis = null;
-	lThigh = null;
-	rThigh = null;
-	lShin  = null;
-	rShin  = null;
-	lFoot  = null;
-	rFoot  = null;
-	tailA  = null;
-	tailB  = null;
+	cameraFocus: Transform | null = null;
+	pivot: Transform | null = null;
+	pelvis: Transform | null = null;
+	lThigh: Transform | null = null;
+	rThigh: Transform | null = null;
+	lShin: Transform | null = null;
+	rShin: Transform | null = null;
+	lFoot: Transform | null = null;
+	rFoot: Transform | null = null;
+	tailA: Transform | null = null;
+	tailB: Transform | null = null;
 
-	head = null;
-	chest = null;
-	lBicep = null;
-	rBicep = null;
-	lForearm = null;
-	rForearm = null;
-	lHand = null;
-	rHand = null
+	head: Transform | null = null;
+	chest: Transform | null = null;
+	lBicep: Transform | null = null;
+	rBicep: Transform | null = null;
+	lForearm: Transform | null = null;
+	rForearm: Transform | null = null;
+	lHand: Transform | null = null;
+	rHand: Transform | null = null;
 
-	constructor(transform = null) {
-		if (transform === null) {
-			transform = new Transform();
-		}
+	constructor(transform: Transform | null = null) {
+		if (transform === null) transform = new Transform();
 		this.pivot = transform;
-		 
+ 
 		// Build the anteater from sticks in a shed
 		const pelvis = this.pelvis = new Transform([ 0.0,  2.25, -1.35], [-2,   0,   0], [1, 1, 1], transform);
 		const lThigh = this.lThigh = new Transform([ 0.5,  0.25,  0.0], [ 0,   0,   0], [1, 1, 1], pelvis);
@@ -47,11 +46,11 @@ export default class Anteater {
 		const rThigh = this.rThigh = lThigh.clone().translate(-1, 0, 0);
 		const rShin  = this.rShin  = lShin.clone().setParent(rThigh);
 		const rFoot  = this.rFoot  = lFoot.clone().setParent(rShin);
-		
+
 		// Tail
 		const tailA = this.tailA = new Transform([0, 0.2, -0.3], [-2, 180, 0], [1, 1, 1], pelvis);
 		const tailB = this.tailB = new Transform([0, 0,   1.75], [5,  0,   0], [1, 1, 1], tailA);
-		
+
 		// Front
 		const chest    = this.chest    = new Transform([0,     0,   2.75], [ 4, 0, 0], [1, 1, 1], pelvis);
 		const lBicep   = this.lBicep   = new Transform([0.5,   0.1,    0], [ 3, 0, 0], [1, 1, 1], chest);
@@ -62,7 +61,7 @@ export default class Anteater {
 		const rHand    = this.rHand    = lHand.clone().setParent(rForearm);
 
 		const head = this.head = new Transform([0, 0.25, 0.5], [0, 0, 0], [1, 1, 1], chest);
-	
+
 
 		// To simplify mesh creation & animation, I do not scale the skeleton's pivots.
 		// as a result the attached "chunks" must be scaled individually. 
@@ -93,7 +92,7 @@ export default class Anteater {
 			[4, 0, 0],
 			[headVisA.scale[0], 0.4, 0.75], head);
 		const eye = new Transform([0, 0.3, 0.5], [0, 0, 90], [0.1, 0.42, 0.1], head);
-		
+
 		this.cameraFocus = bodyVis;
 		this.#meshes.push(new Cube(bodyVis, BODY_COLOUR));
 		this.#meshes.push(new Cube(lThighVis, BODY_COLOUR));
@@ -113,29 +112,28 @@ export default class Anteater {
 		this.#meshes.push(new SlantedCube(stripeVis, BODY_DARK));
 		this.#meshes.push(new SlantedCube(headVisA, BODY_COLOUR));
 		this.#meshes.push(new Cube(headVisB, BODY_COLOUR));
-		this.#meshes.push(new Cylinder(eye, [0, 0, 0, 1].slice()));
-
+		this.#meshes.push(new Cylinder(eye, [0, 0, 0, 1].slice() as [number, number, number, number]));
 		this.#meshes.push(new SlantedCube(stripeBVis, BODY_ALT));
 		this.#meshes.push(new Ramp(stripeCVis, BODY_DARK));
 	}
 
-	render() {
+	render(): void {
 		for (const m of this.#meshes) m.render();
 	}
 
-	getRigInfo() {
+	getRigInfo(): Record<string, [number, number, number]> {
 		const bones = [
 			"head", "lBicep", "rBicep", "lForearm", "rForearm", "lHand", "rHand",
 			"pelvis", "lThigh", "rThigh", "lShin", "rShin", "lFoot", "rFoot",
 			"tailA", "tailB"
-		];
+		] as const;
 
-		const info = {};
+		const info: Record<string, [number, number, number]> = {};
 
 		for (const name of bones) {
 			const bone = this[name];
 			if (!bone) continue;
-			info[name] = bone.rotation.slice();
+			info[name] = bone.rotation.slice() as [number, number, number];
 		}
 
 		return info;

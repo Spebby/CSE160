@@ -1,7 +1,7 @@
 // Asgn2.js
-import { Cube, Cylinder16 } from './shapes.js';
-import { AnimMan } from './animation.js';
-import Transform from './transform.js';
+import { Cube, Cylinder16 } from '../assets/lib/shapes.js';
+import { AnimMan } from '../assets/lib/animation.js';
+import Transform from '../assets/lib/transform.js';
 import Anteater from './anteater.js';
 
 const DEG_TO_RAD = Math.PI / 180;
