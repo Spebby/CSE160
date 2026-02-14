@@ -5,22 +5,43 @@
 import Transform from './transform';
 
 declare class Shape {
+    // ─── Shared static geometry buffers ───────────────────────────────
     static vBuffer: WebGLBuffer | null;
-    static vertexData: number[];
+    static vertexData: number[] | null;
     static vertexCount: number;
     static vertexOffset: number;
-    
+
     static nBuffer: WebGLBuffer | null;
-    static normalData: number[];
-    
-    transform: Transform;
-    colour: [number, number, number, number];
-    
+    static normalData: number[] | null;
+
+    static uvBuffer: WebGLBuffer | null;
+    static uvData: number[] | null;
+
     static initSharedBuffer(): void;
-    
-    constructor(transform: Transform, colour: [number, number, number, number]);
-    
-    setColour(): void;
+
+    // ─── Instance state ───────────────────────────────────────────────
+    transform: Transform;
+    tint: [number, number, number, number];
+
+    texture: WebGLTexture | null;
+    textureLoaded: boolean;
+
+    // Optional instance overrides (used by Mesh)
+    vBuffer?: WebGLBuffer | null;
+    nBuffer?: WebGLBuffer | null;
+    uvBuffer?: WebGLBuffer | null;
+    vertexCount?: number;
+    vertexOffset?: number;
+
+    constructor(
+        transform?: Transform | null,
+        tint: [number, number, number, number],
+        texturePath?: string | null
+    );
+
+    setTint(): void;
+    loadTexture(path: string): void;
+    isPowerOf2(value: number): boolean;
     render(): void;
 }
 
@@ -47,5 +68,26 @@ declare class Cylinder16 extends Cylinder {
     static vertexOffset: number;
 }
 
+declare class Mesh extends Shape {
+    // Mesh bypasses shared static buffers
+    static initSharedBuffer(): void;
+
+    vBuffer: WebGLBuffer | null;
+    nBuffer: WebGLBuffer | null;
+    uvBuffer: WebGLBuffer | null;
+    vertexCount: number;
+
+    constructor(
+        transform?: Transform | null,
+        colour: [number, number, number, number],
+        vertexData: Float32Array | number[],
+        normalData: Float32Array | number[],
+        uvData?: Float32Array | number[] | null,
+        texturePath?: string | null
+    );
+
+    destroy(): void;
+}
+
 export default Shape;
-export { Cube, SlantedCube, Ramp, Cylinder, Cylinder16 };
+export { Cube, SlantedCube, Ramp, Cylinder, Cylinder16, Mesh };

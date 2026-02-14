@@ -5,9 +5,6 @@ import Transform from '../assets/lib/transform.js';
 import Camera, { CameraMode } from '../assets/lib/camera.js';
 import Anteater from './anteater.js';
 
-const DEG_TO_RAD = Math.PI / 180;
-const RAD_TO_DEG = 180 / Math.PI;
-
 // Lighting model is based loosely on Blinn Phong.
 // I was inspired to implement lighting after seeing 
 // Lighting is a bit beyond me so I enlisted Gen AI to adapt
@@ -53,11 +50,11 @@ var FSHADER_SOURCE = `
 
 		// Lambertian diffuse with no distance attenuation
 		float lambertian = max(dot(normal, lightDir), 0.0);
-		vec3 colorLinear = ambientColor + diffuseColor * lambertian;
+		vec3 colourLinear = ambientColor + diffuseColor * lambertian;
 
 		// Gamma correction
-		vec3 colorGammaCorrected = pow(colorLinear, vec3(1.0 / screenGamma));
-		gl_FragColor = vec4(colorGammaCorrected * u_FragColor.rgb, 1.0);
+		vec3 colourGammaCorrected = pow(colourLinear, vec3(1.0 / screenGamma));
+		gl_FragColor = vec4(colourGammaCorrected * u_FragColor.rgb, 1.0);
 	}`;
 
 
@@ -83,7 +80,7 @@ async function main() {
 	setupWebGL();
 	connectVariablesToGLSL();
 
-	const response = await fetch('./animation.json');
+	const response = await fetch('../assets/data/animation.json');
 	const animations = await response.json();
 
 	ANTEATER = new Anteater();
@@ -168,12 +165,12 @@ function setupListeners() {
 	// camera controls
 	document.getElementById('MOVE_SPEED').addEventListener('input', function() { CAMERA.moveSpeed = parseFloat(this.value); });
 
-	window.addEventListener('keydown', function(e) {
-		CAMERA.keyStates[e.key.toLowerCase()] = true;
+	window.addEventListener('keydown', function(env) {
+		CAMERA.keyStates[env.key.toLowerCase()] = true;
 	});
 	
-	window.addEventListener('keyup', function(e) {
-		CAMERA.keyStates[e.key.toLowerCase()] = false;
+	window.addEventListener('keyup', function(env) {
+		CAMERA.keyStates[env.key.toLowerCase()] = false;
 	});
 
 	const modeRadios = document.querySelectorAll('#camMode input[name="mode"]');
@@ -540,7 +537,7 @@ function renderBonesDebug() {
 	for (const node of graph.nodes) {
 		nodeCube.transform.setPos(...node.position);
 		// Green for leaf nodes, red for others
-		nodeCube.colour = leafNodes.has(node.transform) ? [0, 1, 0, 1] : [1, 0, 0, 1];
+		nodeCube.tint = leafNodes.has(node.transform) ? [0, 1, 0, 1] : [1, 0, 0, 1];
 		nodeCube.render();
 	}
 	GL.enable(GL.DEPTH_TEST);

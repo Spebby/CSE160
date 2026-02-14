@@ -1,3 +1,5 @@
+// Unfortunately, this is susceptible to Gimbal Lock
+
 const DEG_TO_RAD = Math.PI / 180;
 const RAD_TO_DEG = 180 / Math.PI;
 
@@ -54,6 +56,64 @@ export default class Transform {
 		this.recomputeCache();
 		return this;
 	}
+
+	/**
+	 * Translate in local space (relative to current rotation)
+	 * @param {number} x - Forward/backward (local Z)
+	 * @param {number} y - Up/down (local Y)
+	 * @param {number} z - Left/right (local X)
+	 */
+	translateLocal(x, y, z) {
+		const forward = this.getForward();
+		const up = this.getUp();
+		const right = this.getRight();
+		
+		this.position[0] += forward[0] * x + up[0] * y + right[0] * z;
+		this.position[1] += forward[1] * x + up[1] * y + right[1] * z;
+		this.position[2] += forward[2] * x + up[2] * y + right[2] * z;
+		
+		this.recomputeCache();
+		return this;
+	}
+
+	/**
+	 * Set rotation to look at a specific point in world space
+	 * @param {number} x - Target X coordinate
+	 * @param {number} y - Target Y coordinate
+	 * @param {number} z - Target Z coordinate
+	 * @param {Array<number>} [upVector=[0,1,0]] - Up vector for orientation
+	 */
+	lookAt(x, y, z, upVector = [0, 1, 0]) {
+		const [posX, posY, posZ] = this.getWorldPosition();
+
+		// Direction to target
+		const dx = x - posX;
+		const dy = y - posY;
+		const dz = z - posZ;
+		const len = Math.hypot(dx, dy, dz);
+
+		if (len < 1e-6) return this; // Target is at same position
+
+		const forward = [dx / len, dy / len, dz / len];
+
+		// Pitch (X) and Yaw (Y)
+		const pitch = Math.asin(forward[1]) * RAD_TO_DEG;
+		const yaw   = Math.atan2(forward[0], forward[2]) * RAD_TO_DEG;
+
+		this.setRot(pitch, yaw, 0); // roll ignored
+		return this;
+	}
+
+	/**
+	 * Set rotation to look at another Transform
+	 * @param {Transform} target - Target transform
+	 * @param {Array<number>} [upVector=[0,1,0]] - Up vector for orientation
+	 */
+	lookAtTarget(target, upVector = [0, 1, 0]) {
+		const [x, y, z] = target.getWorldPosition();
+		return this.lookAt(x, y, z, upVector);
+	}
+
 
 	recomputeCache() {
 		// If we add dirty optimisaiton, consider doing it here.
@@ -119,6 +179,52 @@ export default class Transform {
 			this.worldMatrix.elements[14]
 		];
 	}
+
+	/**
+	 * Get the forward direction vector (negative Z-axis in local space)
+	 * @returns {Array<number>} [x, y, z] normalized forward vector
+	 */
+	getForward() {
+		const m = this.worldMatrix.elements;
+		// Forward is -Z axis. Matrix is column-major, Z-axis is column 2
+		// Column 2 = m[8], m[9], m[10]
+		return [
+			-m[8],
+			-m[9],
+			-m[10]
+		];
+	}
+
+	/**
+	 * Get the right direction vector (positive X-axis in local space)
+	 * @returns {Array<number>} [x, y, z] normalized right vector
+	 */
+	getRight() {
+		const m = this.worldMatrix.elements;
+		// Right is X axis. Matrix is column-major, X-axis is column 0
+		// Column 0 = m[0], m[1], m[2]
+		return [
+			m[0],
+			m[1],
+			m[2]
+		];
+	}
+
+	/**
+	 * Get the up direction vector (positive Y-axis in local space)
+	 * @returns {Array<number>} [x, y, z] normalized up vector
+	 */
+	getUp() {
+		const m = this.worldMatrix.elements;
+		// Up is Y axis. Matrix is column-major, Y-axis is column 1
+		// Column 1 = m[4], m[5], m[6]
+		return [
+			m[4],
+			m[5],
+			m[6]
+		];
+	}
+
 
 	/**
 	 * @returns {Array<number>} in degs

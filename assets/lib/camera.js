@@ -275,4 +275,23 @@ export default class Camera {
 			Math.atan2(dx, dz) * RAD_TO_DEG
 		];
 	}
+	
+	/**
+	 * Cast a ray from screen coordinates and find nearest hit
+	 * Convenient wrapper around raycastFromScreen from raycast.js
+	 * @param {number} screenX - Screen X coordinate (pixels)
+	 * @param {number} screenY - Screen Y coordinate (pixels)
+	 * @param {Array<Object>} objects - Array of objects to test
+	 * @param {number} maxDistance - Maximum distance to raycast (default: 1000)
+	 * @param {Matrix4} projectionMatrix - Projection matrix (optional, uses window.projectionMatrix)
+	 * @param {HTMLCanvasElement} canvas - Canvas element (optional, uses window.canvas)
+	 * @returns {RayHit} Information about the hit
+	 */
+	raycast(screenX, screenY, objects, maxDistance = 1000, projectionMatrix = null, canvas = null) {
+		// This requires raycast.js to be loaded
+		if (typeof raycastFromScreen === 'undefined') {
+			throw new Error('raycast.js must be loaded to use Camera.raycast()');
+		}
+		return raycastFromScreen(screenX, screenY, this, objects, maxDistance, projectionMatrix, canvas);
+	}
 }

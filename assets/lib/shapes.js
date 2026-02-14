@@ -150,6 +150,9 @@ export default class Shape {
 	static nBuffer = null;
 	static normalData = normalArray;
 
+	static uvBuffer = null;
+	static uvData = null;
+
 	static initSharedBuffer() {
 		if (this.vBuffer) return;
 		if (!this.vertexData)
@@ -171,49 +174,148 @@ export default class Shape {
 			new Float32Array(this.normalData),
 			GL.STATIC_DRAW
 		);
+
+		// UV coordinates (if available)
+		if (this.uvData) {
+			this.uvBuffer = GL.createBuffer();
+			GL.bindBuffer(GL.ARRAY_BUFFER, this.uvBuffer);
+			GL.bufferData(
+				GL.ARRAY_BUFFER,
+				new Float32Array(this.uvData),
+				GL.STATIC_DRAW
+			);
+		}
 	}
 
 	/**
 	 * @param {Transform} transform
-	 * @param {Array<number>} colour - RGBA color
+	 * @param {Array<number>} tint - RGBA color
+	 * @param {string|null} texturePath - Optional texture path
 	 */
-	constructor(transform, colour) {
+	constructor(transform, tint, texturePath = null) {
 		this.transform = transform;
-		this.colour = colour;
+		if (!transform) {
+			this.transform = new Transform();
+		}
+		this.tint = tint;
+		this.texture = null;
+		this.textureLoaded = false;
+		
 		this.constructor.initSharedBuffer();
+		
+		if (texturePath) {
+			this.loadTexture(texturePath);
+		}
 	}
 
-	setColour() {
-		const [r, g, b, a] = this.colour;
+	setTint() {
+		const [r, g, b, a] = this.tint;
 		window.GL.uniform4f(window.u_FragColor, r, g, b, a);
 	}
 
+	/**
+	 * Load a texture from an image file
+	 * @param {string} path - Path to image file
+	 */
+	loadTexture(path) {
+		const GL = window.GL;
+		this.texture = GL.createTexture();
+		
+		// Create a 1x1 placeholder pixel until image loads
+		GL.bindTexture(GL.TEXTURE_2D, this.texture);
+		GL.texImage2D(
+			GL.TEXTURE_2D,
+			0,
+			GL.RGBA,
+			1, 1, 0,
+			GL.RGBA,
+			GL.UNSIGNED_BYTE,
+			new Uint8Array([255, 0, 255, 255]) // Magenta placeholder
+		);
+		
+		const image = new Image();
+		image.onload = () => {
+			GL.bindTexture(GL.TEXTURE_2D, this.texture);
+			GL.texImage2D(
+				GL.TEXTURE_2D,
+				0,
+				GL.RGBA,
+				GL.RGBA,
+				GL.UNSIGNED_BYTE,
+				image
+			);
+			
+			// Check if image is power of 2
+			if (this.isPowerOf2(image.width) && this.isPowerOf2(image.height)) {
+				GL.generateMipmap(GL.TEXTURE_2D);
+			} else {
+				GL.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_WRAP_S, GL.CLAMP_TO_EDGE);
+				GL.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_WRAP_T, GL.CLAMP_TO_EDGE);
+				GL.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_MIN_FILTER, GL.LINEAR);
+			}
+			
+			this.textureLoaded = true;
+		};
+		image.onerror = () => {
+			console.error(`Failed to load texture: ${path}`);
+		};
+		image.src = path;
+	}
+
+	isPowerOf2(value) {
+		return (value & (value - 1)) === 0;
+	}
+
 	render() {
-		this.setColour();
+		this.setTint();
 		const GL = window.GL;
 		const C = this.constructor;
-
+		
+		// Use instance properties if they exist (Mesh), otherwise use static (Cube, etc.)
+		const vBuffer = this.vBuffer ?? C.vBuffer;
+		const nBuffer = this.nBuffer ?? C.nBuffer;
+		const uvBuffer = this.uvBuffer ?? C.uvBuffer;
+		const vertexCount = this.vertexCount ?? C.vertexCount;
+		const vertexOffset = this.vertexOffset ?? C.vertexOffset;
+		
 		GL.uniformMatrix4fv(
 			window.u_ModelMatrix,
 			false,
 			this.transform.worldMatrix.elements
 		);
-
-		GL.bindBuffer(GL.ARRAY_BUFFER, C.vBuffer);
+		
+		// Bind vertex positions
+		GL.bindBuffer(GL.ARRAY_BUFFER, vBuffer);
 		GL.vertexAttribPointer(window.a_Position, 3, GL.FLOAT, false, 0, 0);
 		GL.enableVertexAttribArray(window.a_Position);
-
-		GL.bindBuffer(GL.ARRAY_BUFFER, C.nBuffer);
+		
+		// Bind normals
+		GL.bindBuffer(GL.ARRAY_BUFFER, nBuffer);
 		GL.vertexAttribPointer(window.a_Normal, 3, GL.FLOAT, false, 0, 0);
 		GL.enableVertexAttribArray(window.a_Normal);
-
-		GL.drawArrays(GL.TRIANGLES, C.vertexOffset, C.vertexCount);
+		
+		// Bind texture if available
+		if (this.texture && this.textureLoaded && uvBuffer) {
+			GL.activeTexture(GL.TEXTURE0);
+			GL.bindTexture(GL.TEXTURE_2D, this.texture);
+			GL.uniform1i(window.u_Sampler, 0);
+			GL.uniform1i(window.u_UseTexture, 1);
+			
+			GL.bindBuffer(GL.ARRAY_BUFFER, uvBuffer);
+			GL.vertexAttribPointer(window.a_TexCoord, 2, GL.FLOAT, false, 0, 0);
+			GL.enableVertexAttribArray(window.a_TexCoord);
+		} else {
+			GL.uniform1i(window.u_UseTexture, 0);
+		}
+		
+		GL.drawArrays(GL.TRIANGLES, vertexOffset, vertexCount);
 	}
 }
 
 export class Cube extends Shape {
 	static vertexCount = 36;
 	static vertexOffset = CUBE_OFFSET;
+
 }
 
 export class SlantedCube extends Cube {
@@ -232,4 +334,64 @@ export class Cylinder extends Shape {
 export class Cylinder16 extends Cylinder {
 	static vertexCount = (cylinder16Verts.length / 3);
 	static vertexOffset = CYLINDER16_OFFSET;
+}
+
+export class Mesh extends Shape {
+	// Override static properties - Mesh doesn't use shared buffers
+	static initSharedBuffer() {
+		// No-op for Mesh - it uses instance buffers
+	}
+	
+	/**
+	 * @param {Transform|null} transform
+	 * @param {Array<number>} colour
+	 * @param {Float32Array|Array} vertexData - Vertex positions [x,y,z, x,y,z, ...]
+	 * @param {Float32Array|Array} normalData - Normals [x,y,z, x,y,z, ...]
+	 * @param {Float32Array|Array|null} uvData - UV coords [u,v, u,v, ...] (optional)
+	 * @param {string|null} texturePath - Optional texture path
+	 */
+	constructor(transform, colour, vertexData, normalData, uvData = null, texturePath = null) {
+		super(transform, colour, texturePath);
+		this.vertexCount = vertexData.length / 3;
+		
+		const GL = window.GL;
+		
+		// Create vertex buffer
+		this.vBuffer = GL.createBuffer();
+		GL.bindBuffer(GL.ARRAY_BUFFER, this.vBuffer);
+		GL.bufferData(
+			GL.ARRAY_BUFFER,
+			new Float32Array(vertexData),
+			GL.STATIC_DRAW
+		);
+		
+		// Create normal buffer
+		this.nBuffer = GL.createBuffer();
+		GL.bindBuffer(GL.ARRAY_BUFFER, this.nBuffer);
+		GL.bufferData(
+			GL.ARRAY_BUFFER,
+			new Float32Array(normalData),
+			GL.STATIC_DRAW
+		);
+		
+		// Create UV buffer if provided
+		if (uvData) {
+			this.uvBuffer = GL.createBuffer();
+			GL.bindBuffer(GL.ARRAY_BUFFER, this.uvBuffer);
+			GL.bufferData(
+				GL.ARRAY_BUFFER,
+				new Float32Array(uvData),
+				GL.STATIC_DRAW
+			);
+		}
+	}
+
+	// Cleanup method for when mesh is destroyed
+	destroy() {
+		const GL = window.GL;
+		if (this.vBuffer) GL.deleteBuffer(this.vBuffer);
+		if (this.nBuffer) GL.deleteBuffer(this.nBuffer);
+		if (this.uvBuffer) GL.deleteBuffer(this.uvBuffer);
+		if (this.texture) GL.deleteTexture(this.texture);
+	}
 }

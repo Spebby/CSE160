@@ -24,6 +24,30 @@ declare class Transform {
     setScale(sx: number, sy: number, sz: number): this;
     translate(x: number, y: number, z: number): this;
     
+    /**
+     * Translate in local space (relative to current rotation)
+     * @param x - Forward/backward (local Z)
+     * @param y - Up/down (local Y)
+     * @param z - Left/right (local X)
+     */
+    translateLocal(x: number, y: number, z: number): this;
+    
+    /**
+     * Set rotation to look at a specific point in world space
+     * @param x - Target X coordinate
+     * @param y - Target Y coordinate
+     * @param z - Target Z coordinate
+     * @param upVector - Up vector for orientation (default: [0,1,0])
+     */
+    lookAt(x: number, y: number, z: number, upVector?: [number, number, number]): this;
+    
+    /**
+     * Set rotation to look at another Transform
+     * @param target - Target transform
+     * @param upVector - Up vector for orientation (default: [0,1,0])
+     */
+    lookAtTarget(target: Transform, upVector?: [number, number, number]): this;
+    
     recomputeCache(): void;
     
     addChild(child: Transform): this;
@@ -32,6 +56,24 @@ declare class Transform {
     
     getWorldPosition(): [number, number, number];
     getWorldRotation(): [number, number, number];
+    
+    /**
+     * Get the forward direction vector (negative Z-axis in local space)
+     * @returns [x, y, z] normalized forward vector
+     */
+    getForward(): [number, number, number];
+    
+    /**
+     * Get the right direction vector (positive X-axis in local space)
+     * @returns [x, y, z] normalized right vector
+     */
+    getRight(): [number, number, number];
+    
+    /**
+     * Get the up direction vector (positive Y-axis in local space)
+     * @returns [x, y, z] normalized up vector
+     */
+    getUp(): [number, number, number];
     
     clone(): Transform;
     

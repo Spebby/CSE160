@@ -20,9 +20,6 @@ declare class Camera {
     distance: number;
     moveSpeed: number;
     
-    angleX: number;  // Pitch in degrees
-    angleY: number;  // Yaw in degrees
-    
     isDragging: boolean;
     lastMouseX: number;
     lastMouseY: number;
@@ -58,8 +55,8 @@ declare class Camera {
     /**
      * Handle mouse wheel for distance/speed adjustment
      * @param delta - Wheel delta
-     * @param maxSpeed - Maximum movement speed
-     * @param step - Speed adjustment step
+     * @param maxSpeed - Maximum movement speed (default: 0.1)
+     * @param step - Speed adjustment step (default: 0.001)
      */
     handleMouseWheel(delta: number, maxSpeed?: number, step?: number): void;
     
@@ -68,6 +65,33 @@ declare class Camera {
      * @param newMode - New camera mode
      */
     setMode(newMode: CameraModeType): void;
+    
+    // Private helper methods
+    _getAngles(): [number, number];
+    _getMovementVectors(angleY: number): {
+        forwardX: number;
+        forwardZ: number;
+        rightX: number;
+        rightZ: number;
+    };
+    _getTrackingVectors(targetX: number, targetZ: number, camX: number, camZ: number): {
+        forwardX: number;
+        forwardZ: number;
+        rightX: number;
+        rightZ: number;
+    };
+    _getOrbitPosition(targetX: number, targetY: number, targetZ: number, distance: number, angleX: number, angleY: number): {
+        x: number;
+        y: number;
+        z: number;
+    };
+    _getLookAtPoint(angleX: number, angleY: number, distance?: number): {
+        x: number;
+        y: number;
+        z: number;
+    };
+    _anglesToDir(ax: number, ay: number): [number, number, number];
+    _dirToAngles(dx: number, dy: number, dz: number): [number, number] | null;
 }
 
 export default Camera;
