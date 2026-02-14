@@ -46,8 +46,26 @@ const FSHADER_SOURCE = `
 
 let canvas: HTMLCanvasElement;
 let GL: WebGLRenderingContext;
-let W: number, H: number;
+let W: number, H: number, HW: number, HH: number;
 let START_TIME = performance.now() / 1000.0;
+
+let FOV: number;
+
+const MOVE_SPEED = 10;
+
+let cameraPositionX = 0;
+let cameraPositionY = 2;
+let cameraPositionZ = 5;
+let cameraAngleX = 0;
+let cameraAngleY = 0;
+
+let mouseSensitivity = 0.2;
+let isDragging = false;
+let lastMouseX = 0;
+let lastMouseY = 0;
+
+let invX = false;
+let invY = false;
 
 async function main(): Promise<void> {
 	setupWebGL();

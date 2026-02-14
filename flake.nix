@@ -62,6 +62,7 @@
 
           shellHook = ''
             export JEKYLL_ENV="production"
+            bundle install
             echo "Dev Env loaded."
             echo ""
             echo "Build commands:"
@@ -70,7 +71,6 @@
             echo "  npm run dev:asgn# - Dev mode for specific assignment"
             echo ""
             ${self.checks.${system}.pre-commit-check.shellHook}
-            bundle install
           '';
         };
       }
