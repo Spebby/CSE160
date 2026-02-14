@@ -1,4 +1,5 @@
-// Asgn3.ts - TypeScript Starter
+/// <reference types="stats.js" />
+
 import { Cube, Mesh } from '../../assets/lib/shapes.js';
 import { AnimMan } from '../../assets/lib/animation.js';
 import Transform from '../../assets/lib/transform.js';
@@ -68,6 +69,11 @@ let ANTEATER: Anteater;
 let ANT_ANIM: AnimMan;
 let gun: Mesh;
 let DEBUG: boolean;
+let stats = new Stats();
+stats.dom.style.left = "auto";
+stats.dom.style.right = "0";
+stats.showPanel(0);
+document.body.appendChild(stats.dom);
 
 async function main(): Promise<void> {
 	setupWebGL();
@@ -251,12 +257,16 @@ function tick(): void {
 	const dt = (now - START_TIME) / 1000;
 	START_TIME = now;
 
+	stats.begin();
+
 	CAMERA.update(dt);
 	const viewMatrix = CAMERA.getViewMatrix();
 	GL.uniformMatrix4fv(window.u_GlobalRotation, false, viewMatrix.elements);
 
 	dispatchAnimations(dt);
 	renderAllShapes(dt);
+
+	stats.end();
 	requestAnimationFrame(tick);
 
 	if (DEBUG) {

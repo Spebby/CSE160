@@ -7,6 +7,7 @@
     "watch": "tsc --watch"
   },
   "devDependencies": {
+    "@types/stats.js": "^0.17.4",
     "typescript": "^5.3.3"
   }
 }
