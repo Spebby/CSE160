@@ -97,8 +97,11 @@ interface Window {
     GL: WebGLRenderingContext;
     a_Position: number;
     a_Normal: number;
+    a_TexCoord?: number;
     u_FragColor: WebGLUniformLocation;
     u_ModelMatrix: WebGLUniformLocation;
     u_GlobalRotation: WebGLUniformLocation;
     u_ProjectionMatrix: WebGLUniformLocation;
+    u_Sampler: WebGLUniformLocation | null;
+    u_UseTexture: WebGLUniformLocation | null;
 }
