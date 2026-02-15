@@ -4,6 +4,13 @@
 
 import Transform from './transform';
 
+export interface MaterialProperties {
+    shininess?: number;
+    specularStrength?: number;
+    rimStrength?: number;
+	UVScale?: [number, number];
+}
+
 declare class Shape {
     // ─── Shared static geometry buffers ───────────────────────────────
     static vBuffer: WebGLBuffer | null;
@@ -56,12 +63,14 @@ declare class Shape {
 	 * @param {Array<number>} tint - RGBA color
 	 * @param {float} alphaCutout - Should rendering use alpha clipping?
 	 * @param {string|null} texturePath - Optional texture path
+	 * @param {MaterialProperties} material - Material settings
 	 */
     constructor(
         transform?: Transform | null,
         tint?: [number, number, number, number],
 		alphaCutout: float = 0.0,
-        texturePath?: string | null
+        texturePath?: string | null,
+		material?: MaterialProperties | null
     );
     
     /**
@@ -78,6 +87,7 @@ declare class Shape {
     }>): this;
     
     setTint(): void;
+	setMaterial(props: MaterialProperties): this;
     loadTexture(path: string): void;
     isPowerOf2(value: number): boolean;
     render(): void;
@@ -85,6 +95,18 @@ declare class Shape {
     // Private state management methods
     _applyGLState(): Record<string, any>;
     _restoreGLState(prevState: Record<string, any>): void;
+
+	clone(
+		transform?: Transform | null,
+		colour?: [number, number, number, number] | null
+	): Shape;
+
+    destroy(): void;
+}
+
+declare class Plane extends Shape {
+    static vertexCount: number;
+    static vertexOffset: number;
 }
 
 declare class Cube extends Shape {
@@ -128,14 +150,7 @@ declare class Mesh extends Shape {
         uvData?: Float32Array | number[] | null,
         texturePath?: string | null
     );
-
-	clone(
-		transform?: Transform | null,
-		colour?: [number, number, number, number] | null
-	): Mesh;
-
-    destroy(): void;
 }
 
 export default Shape;
-export { Cube, SlantedCube, Ramp, Cylinder, Cylinder16, Mesh };
+export { Plane, Cube, SlantedCube, Ramp, Cylinder, Cylinder16, Mesh };

@@ -1,11 +1,12 @@
 /// <reference types="stats.js" />
 
-import Shape, { Cube, Mesh } from '../../assets/lib/shapes.js';
-import { AnimMan } from '../../assets/lib/animation.js';
+import Shape, { Plane, Cube, Mesh, MaterialProperties } from '../../assets/lib/shapes.js';
 import Transform from '../../assets/lib/transform.js';
 import Camera, { CameraMode } from '../../assets/lib/camera.js';
 import Anteater from './anteater.js';
 import LoadOBJ from './objloader.js';
+import GameGrid from './gamegrid.js';
+import MushroomMan from './mushroomman.js';
 
 // Vertex shader program
 const VSHADER_SOURCE = `
@@ -20,19 +21,21 @@ const VSHADER_SOURCE = `
 	varying vec3 v_Normal;
 	varying vec3 v_FragPos;
 	varying vec2 v_TexCoord;
+	uniform vec2 u_UVScale;
 	
 	void main() {
 		vec4 worldPos = u_ModelMatrix * a_Position;
 		v_FragPos = worldPos.xyz;
 		v_Normal = mat3(u_ModelMatrix) * a_Normal.xyz;
 		gl_Position = u_ProjectionMatrix * u_GlobalRotation * worldPos;
-		v_TexCoord = a_TexCoord;
+		v_TexCoord = a_TexCoord * u_UVScale;
 	}`;
+
+const skyColor: [number, number, number] = [0.388, 0.753, 0.925];
 
 // Fragment shader program
 const FSHADER_SOURCE = `
 	precision mediump float;
-	
 	varying vec3 v_Normal;
 	varying vec3 v_FragPos;
 	varying vec2 v_TexCoord;
@@ -41,18 +44,28 @@ const FSHADER_SOURCE = `
 	uniform sampler2D u_Sampler;
 	uniform int u_UseTexture;
 	uniform float u_AlphaCutout;
+	uniform vec3 u_CameraPos;
 	
-	const vec3 lightDir = normalize(vec3(10.0, 20.0, 10.0));
-	const vec3 ambientColor = vec3(0.1, 0.1, 0.1);
-	const vec3 diffuseColor = vec3(0.4, 0.4, 0.4);
+	// material properties
+	uniform float u_Shininess;
+	uniform float u_SpecularStrength;
+	uniform float u_RimStrength;
+
+	// fog
+	uniform vec3 u_FogColor;
+	uniform float u_FogStart;
+	uniform float u_FogEnd;
+	
+	const vec3 sunDir = normalize(vec3(10.0, 20.0, 10.0));
+	const vec3 sunColor = vec3(1.0, 0.98, 0.95);
+	const float sunStrength = 0.95;
+	const vec3 skyAmbient = vec3(0.2, 0.3, 0.4);
+	const vec3 groundAmbient = vec3(0.15, 0.12, 0.1);
 	const float screenGamma = 2.2;
-
+	const float rimPower = 3.0;
+	const vec3 rimColor = vec3(0.5, 0.6, 0.8);
+	
 	void main() {
-		vec3 normal = normalize(v_Normal);
-		float lambertian = max(dot(normal, lightDir), 0.0);
-		vec3 colourLinear = ambientColor + diffuseColor * lambertian;
-		vec3 colourGammaCorrected = pow(colourLinear, vec3(1.0 / screenGamma));
-
 		vec4 baseColor = u_FragColor;
 		
 		if (u_UseTexture == 1) {
@@ -63,7 +76,31 @@ const FSHADER_SOURCE = `
 			discard;
 		}
 		
-		gl_FragColor = vec4(colourGammaCorrected * baseColor.rgb, baseColor.a);
+		vec3 normal = normalize(v_Normal);
+		float up = clamp(normal.y * 0.5 + 0.5, 0.0, 1.0);
+		vec3 ambient = mix(groundAmbient, skyAmbient, up);
+		
+		float lambertian = max(dot(normal, sunDir), 0.0);
+		vec3 diffuse = sunColor * sunStrength * lambertian;
+		
+		vec3 viewDir = normalize(u_CameraPos - v_FragPos);
+		vec3 halfDir = normalize(sunDir + viewDir);
+		float NdotH = max(dot(normal, halfDir), 0.0);
+		float specular = pow(NdotH, u_Shininess) * u_SpecularStrength * lambertian;
+		vec3 specularLight = sunColor * specular;
+		
+		float rim = 1.0 - max(dot(viewDir, normal), 0.0);
+		rim = pow(rim, rimPower) * u_RimStrength;
+		vec3 rimLight = rimColor * rim;
+		
+		vec3 lighting = ambient + diffuse + specularLight + rimLight;
+		vec3 litColor = pow(lighting * baseColor.rgb, vec3(1.0 / screenGamma));
+
+		float distance = length(u_CameraPos - v_FragPos);
+		float fogFactor = clamp((u_FogEnd - distance) / (u_FogEnd - u_FogStart), 0.0, 1.0);
+		vec3 finalColor = mix(u_FogColor, litColor, fogFactor);
+
+		gl_FragColor = vec4(finalColor, baseColor.a);
 	}`;
 
 let canvas: HTMLCanvasElement;
@@ -72,7 +109,6 @@ let W: number, H: number, HW: number, HH: number;
 let START_TIME = performance.now() / 1000.0;
 let CAMERA: Camera;
 let ANTEATER: Anteater;
-let ANT_ANIM: AnimMan;
 let DEBUG: boolean;
 let stats = new Stats();
 stats.dom.style.left = "auto";
@@ -82,53 +118,151 @@ document.body.appendChild(stats.dom);
 
 let treeMesh: Mesh;
 let treeFoliage: Mesh;
-let static_meshes: Shape[] = [];
+let meshes: Shape[] = [];
+const GRID = new GameGrid(2.0);
+let MUSH_MAN: MushroomMan;
 
 async function main(): Promise<void> {
 	setupWebGL();
 	connectVariablesToGLSL();
-
-	// Init tree
-	let treeRoot = new Transform();
-	treeMesh     = await LoadOBJ('./maple.obj', './maple.png', treeRoot);
-	treeFoliage  = await LoadOBJ('./maple_foliage.obj', './maple_foliage.png', treeRoot);
-	treeFoliage.alphaCutout = 0.6;
-	treeFoliage.setGLState({ cullFace: false, blend: false });
-	static_meshes.push(treeMesh);
-	static_meshes.push(treeFoliage);
-
-	const response = await fetch('../../assets/data/animation.json');
-	const animations = await response.json();
-
-	ANTEATER = new Anteater(new Transform([0,0,0], [0,0,0], [0.5,0.5,0.5]));
-	ANT_ANIM = new AnimMan(ANTEATER.bones, animations);
-	ANT_ANIM.queueAnim('idle');
-
-	// Initialize camera with Transforms
-	const cameraTransform = new Transform([0, 0, 0], [0, 0, 0], [1, 1, 1]);
-	CAMERA = new Camera(cameraTransform, ANTEATER.cameraFocus, CameraMode.FREE);
+	
+	const treeRoot = new Transform();
+	const treeMeshPromise = LoadOBJ('./models/maple.obj', './models/maple.png', treeRoot);
+	const treeFoliagePromise = LoadOBJ('./models/maple_foliage.obj', './models/maple_foliage.png', treeRoot);
+	const animPromise = fetch('../../assets/data/animation.json').then(r => r.json());
+	const mushroomsPromise = initMushrooms();
+	
+	// get sync over with
+	setupListeners();
+	GL.clearColor(...skyColor, 1.0);
+	GL.clear(GL.COLOR_BUFFER_BIT | GL.DEPTH_BUFFER_BIT);
+	resizeCanvas();
+	
+	const cameraTransform = new Transform([0, 2, -5], [0, 0, 0], [1, 1, 1]);
+	CAMERA = new Camera(cameraTransform, null, CameraMode.FP);
 	CAMERA.distance = 6;
 	CAMERA.moveSpeed = 10;
 	DEBUG = false;
-
-	setupListeners();
-
-	GL.clearColor(0.0, 0.0, 0.0, 1.0);
-	GL.clear(GL.COLOR_BUFFER_BIT | GL.DEPTH_BUFFER_BIT);
-
-	resizeCanvas();
-
 	
-	// Setup world
+	// Init world
+	let ground = new Plane(new Transform([0,0,0], [0,0,0], [256, 1, 256]), [117 / 255, 167 / 255, 67 / 255, 1.0], 0.0, './noise.png', {
+		shininess: 0.0, 
+		specularStrength: 0.0, 
+		rimStrength: 0.0,
+		UVScale: [4.0, 4.0],
+	});
+	meshes.push(ground);
 	
+	
+	// Sync Barrier
+	const [loadedTreeMesh, loadedTreeFoliage, animations] = await Promise.all([
+		treeMeshPromise,
+		treeFoliagePromise,
+		animPromise,
+		mushroomsPromise
+	]);
+	
+	treeMesh = loadedTreeMesh;
+	treeFoliage = loadedTreeFoliage;
+	treeFoliage.alphaCutout = 0.6;
+	treeFoliage.setMaterial({ 
+		shininess: 0.0, 
+		specularStrength: 0.0, 
+		rimStrength: 0.0 
+	});
+	treeFoliage.setGLState({ cullFace: false, blend: false });
+	meshes.push(treeMesh);
+	meshes.push(treeFoliage);
+	
+	ANTEATER = new Anteater(new Transform([5,0,0], [0,-180,0], [0.5,0.5,0.5]), animations);
+	ANTEATER.setMaxRoamDistance(15); // Stay within 32
+	ANTEATER.setMoveSpeed(3.0);
+	ANTEATER.setWanderTiming(3.0, 0.8)
 
-
+	CAMERA.target = ANTEATER.cameraFocus;
+	
 	requestAnimationFrame(tick);
 }
 
-function placeTree(point: Transform) {
-	static_meshes.push(treeMesh.clone(point));
-	static_meshes.push(treeFoliage.clone(point));
+
+function placeTree(point: Transform): void {
+	meshes.push(treeMesh.clone(point));
+	meshes.push(treeFoliage.clone(point));
+}
+
+async function initMushrooms(): Promise<void> {
+    const paths = [
+        'morel',
+        'black_trumpet',
+        'bolete',
+        'chanterelle',
+        'dapperling',
+        'galerina',
+        'gymnopilus',
+        'jackolantern',
+        'panaeoleus',
+        'parasol',
+        'pluteus',
+        'salt',
+        'silly',
+    ];
+
+    const mushroomMeshes = await Promise.all(
+        paths.map(name =>
+            LoadOBJ(`./models/${name}.obj`, './models/mushroom.png')
+        )
+    );
+
+	// morel is only one that needs transparency
+    mushroomMeshes[0].setGLState({ cullFace: false, blend: false });
+	mushroomMeshes[0].alphaCutout = 0.5;
+
+	MUSH_MAN = new MushroomMan(mushroomMeshes, GRID);
+	MUSH_MAN.placeMushroom(0, -2);
+
+	// poisson disk sample (with gap around centre) and attempt to place ~64 mushrooms.
+	const targetCount = 32;
+	const minDistance = 5;
+	const centerExclusionRadius = 10.0; // Gap around center
+	const spawnRadius = 96.0; // How far out to spawn mushrooms
+	
+	const samples: [number, number][] = [];
+	const maxAttempts = targetCount * 10;
+	
+	for (let attempt = 0; attempt < maxAttempts && samples.length < targetCount; attempt++) {
+		// Generate random point in annulus (ring)
+		const angle = Math.random() * Math.PI * 2;
+		const radius = centerExclusionRadius + Math.random() * (spawnRadius - centerExclusionRadius);
+		
+		const x = Math.cos(angle) * radius;
+		const z = Math.sin(angle) * radius;
+		
+		// Check if far enough from existing samples
+		let valid = true;
+		for (const [sx, sz] of samples) {
+			const dx = x - sx;
+			const dz = z - sz;
+			if (Math.sqrt(dx * dx + dz * dz) < minDistance) {
+				valid = false;
+				break;
+			}
+		}
+		
+		if (valid) {
+			samples.push([x, z]);
+		}
+	}
+	
+	// Place mushrooms
+	let placed = 0;
+	for (const [x, z] of samples) {
+		const mushroom = MUSH_MAN.placeMushroom(x, z);
+		if (mushroom) {
+			placed++;
+		}
+	}
+	
+	console.log(`Placed ${placed} mushrooms (target: ${targetCount})`);
 }
 
 function setupWebGL(): void {
@@ -212,83 +346,69 @@ function connectVariablesToGLSL(): void {
 		return;
 	}
 
-	const tPos = GL.getAttribLocation(GL.program!, 'a_Position');
-	if (tPos < 0) {
-		console.log('Failed to get storage location of a_Position');
-		return;
-	}
-	window.a_Position = tPos;
+	// helper for attributes
+	const getAttrib = (name: string, optional = false) => {
+		const loc = GL.getAttribLocation(GL.program!, name);
+		if (loc < 0 && !optional) console.log(`Failed to get location of ${name}`);
+		return loc;
+	};
 
-	const tNor = GL.getAttribLocation(GL.program!, 'a_Normal');
-	if (tNor < 0) {
-		console.log('Failed to get storage location of a_Normal');
-		return;
-	}
-	window.a_Normal = tNor;
+	// helper for uniforms
+	const getUniform = (name: string, optional = false) => {
+		const loc = GL.getUniformLocation(GL.program!, name);
+		if (!loc && !optional) console.log(`Failed to get location of ${name}`);
+		return loc;
+	};
 
-	const tTexCoord = GL.getAttribLocation(GL.program!, 'a_TexCoord');
-	if (tTexCoord < 0) {
-		console.log('Failed to get storage location of a_TexCoord');
-		// no return, textures are optional
-	}
-	window.a_TexCoord = tTexCoord;
+	// attributes
+	window.a_Position = getAttrib('a_Position');
+	window.a_Normal   = getAttrib('a_Normal');
+	window.a_TexCoord = getAttrib('a_TexCoord', true); // optional
 
-	const tCol = GL.getUniformLocation(GL.program!, 'u_FragColor');
-	if (!tCol) {
-		console.log('Failed to get storage location of u_FragColor');
-		return;
-	}
-	window.u_FragColor = tCol;
+	// uniforms
+	window.u_FragColor       = getUniform('u_FragColor')!;
+	window.u_Sampler         = getUniform('u_Sampler', true);
+	window.u_UseTexture      = getUniform('u_UseTexture', true);
+	GL.uniform1i(window.u_UseTexture, 0);
 
-	const uSampler = GL.getUniformLocation(GL.program!, 'u_Sampler');
-	if (!uSampler) {
-		console.log('Failed to get storage location of u_Sampler');
-		// no return textures are optional
-	}
-	window.u_Sampler = uSampler;
+	window.u_AlphaCutout     = getUniform('u_AlphaCutout', true);
+	GL.uniform1f(window.u_AlphaCutout, 0.0);
 
-	const uUseTexture = GL.getUniformLocation(GL.program!, 'u_UseTexture');
-	if (!uUseTexture) {
-		console.log('Failed to get storage location of u_UseTexture');
-		// no return - textures are optional
-	}
-	window.u_UseTexture = uUseTexture;
-	GL.uniform1i(window.u_UseTexture, 0); // default to no texture
+	window.u_ModelMatrix     = getUniform('u_ModelMatrix')!;
+	GL.uniformMatrix4fv(window.u_ModelMatrix, false, new Matrix4().elements);
 
-	const uAlphaCutout = GL.getUniformLocation(GL.program!, 'u_AlphaCutout');
-	if (!uAlphaCutout) {
-		console.log('Failed to get storage location of u_AlphaCutout');
-		// no return - textures are optional
-	}
-	window.u_AlphaCutout = uAlphaCutout;
-	GL.uniform1f(window.u_AlphaCutout, 0.0); // default to no texture
-
-	const tMod = GL.getUniformLocation(GL.program!, 'u_ModelMatrix');
-	if (!tMod) {
-		console.log('Failed to get storage location of u_ModelMatrix');
-		return;
-	}
-	window.u_ModelMatrix = tMod;
-	const identityMatrix = new Matrix4();
-	GL.uniformMatrix4fv(window.u_ModelMatrix, false, identityMatrix.elements);
-
-	const tGol = GL.getUniformLocation(GL.program!, 'u_GlobalRotation');
-	if (!tGol) {
-		console.log('Failed to get storage location of u_GlobalRotation');
-		return;
-	}
-	window.u_GlobalRotation = tGol;
+	window.u_GlobalRotation  = getUniform('u_GlobalRotation')!;
 	const globalRotation = new Matrix4();
 	globalRotation.setIdentity();
 	GL.uniformMatrix4fv(window.u_GlobalRotation, false, globalRotation.elements);
 
-	const tProj = GL.getUniformLocation(GL.program!, 'u_ProjectionMatrix');
-	if (!tProj) {
-		console.log('Failed to get storage location of u_ProjectionMatrix');
-		return;
-	}
-	window.u_ProjectionMatrix = tProj;
+	window.u_ProjectionMatrix = getUniform('u_ProjectionMatrix')!;
+	window.u_CameraPos        = getUniform('u_CameraPos')!;
+
+	const setUniform1f = (name: string, value: number) => {
+		const loc = getUniform(name);
+		if (loc) GL.uniform1f(loc, value);
+		return loc;
+	};
+
+	window.u_Shininess        = setUniform1f('u_Shininess', 32.0)!;
+	window.u_SpecularStrength = setUniform1f('u_SpecularStrength', 0.3)!;
+	window.u_RimStrength      = setUniform1f('u_RimStrength', 0.2)!;
+	window.u_UVScale = getUniform('u_UVScale')!;
+	GL.uniform2f(window.u_UVScale, 1.0, 1.0);
+
+	u_FogColor = getUniform('u_FogColor')!;
+	GL.uniform3f(u_FogColor, ...skyColor);
+	u_FogStart = getUniform('u_FogStart')!;
+	GL.uniform1f(u_FogStart, 64.0);
+	u_FogEnd = getUniform('u_FogEnd')!;
+	GL.uniform1f(u_FogEnd, 128.0);
 }
+
+let u_FogColor: WebGLUniformLocation;
+let u_FogStart: WebGLUniformLocation;
+let u_FogEnd: WebGLUniformLocation;
+
 
 function tick(): void {
 	const now = performance.now();
@@ -298,12 +418,16 @@ function tick(): void {
 	stats.begin();
 
 	CAMERA.update(dt);
+	const [camX, camY, camZ] = CAMERA.transform.getWorldPosition();
+	GL.uniform3f(window.u_CameraPos, camX, camY, camZ);
+
 	const viewMatrix = CAMERA.getViewMatrix();
 	GL.uniformMatrix4fv(window.u_GlobalRotation, false, viewMatrix.elements);
 
 	dispatchAnimations(dt);
 	renderAllShapes(dt);
 
+	MUSH_MAN.update(dt);
 	stats.end();
 	requestAnimationFrame(tick);
 
@@ -313,16 +437,16 @@ function tick(): void {
 }
 
 function dispatchAnimations(dt: number): void {
-	ANT_ANIM.update(dt);
+	ANTEATER.update(dt);
 }
 
 function renderAllShapes(dt: number): void {
 	GL.clear(GL.COLOR_BUFFER_BIT | GL.DEPTH_BUFFER_BIT);
 	
-	// Example: render a spinning cube
 	ANTEATER.render();
+	MUSH_MAN.render();
 
-	for (const mesh of static_meshes) {
+	for (const mesh of meshes) {
 		mesh.render();
 	}
 }

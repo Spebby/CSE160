@@ -102,7 +102,14 @@ interface Window {
     u_ModelMatrix: WebGLUniformLocation;
     u_GlobalRotation: WebGLUniformLocation;
     u_ProjectionMatrix: WebGLUniformLocation;
+	u_CameraPos : WebGLUniformLocation;
     u_Sampler: WebGLUniformLocation | null;
     u_UseTexture: WebGLUniformLocation | null;
 	u_AlphaCutout: WebGLUniformLocation | null;
+
+	// this really shouldn't be here...
+	u_Shininess: WebGLUniformLocation;
+	u_SpecularStrength: WebGLUniformLocation;
+	u_RimStrength: WebGLUniformLocation;
+	u_UVScale: WebGLUniformLocation;
 }

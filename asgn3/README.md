@@ -15,4 +15,6 @@ With this assignment, I moved over to Typescript, and to speed up this process,
 I asked Claude Sonnet 4.5 to write Typescript bindings for the library classes
 we've been using until now. As part of easing development, I moved the animation
 and transform classes out of `asgn2` and moved them into lib. I asked Claude to
-write typescript bindings for these to ease usage.
+write typescript bindings for these to ease usage. I also asked it with help in
+writing the "GLStateOverride" functionality for the Shape class, though I
+described the interface.

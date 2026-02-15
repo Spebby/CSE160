@@ -165,6 +165,9 @@ function generateNormals(vertices) {
 }
 
 const shapeArray = [
+	// Plane
+	-0.5, 0.0, -0.5,  0.5, 0.0,  0.5,  0.5, 0.0, -0.5,   -0.5, 0.0, -0.5, -0.5, 0.0,  0.5,  0.5, 0.0,  0.5,
+
 	 // Cube (+X, -X, +Y, -Y, +Z, -Z)
 	 0.5,-0.5,-0.5,0.5,-0.5,0.5,-0.5,-0.5,0.5,0.5,0.5,-0.5,0.5,-0.5,-0.5,-0.5,-0.5,-0.5,-0.5,-0.5,-0.5,-0.5,0.5,0.5,-0.5,0.5,-0.5,0.5,0.5,-0.5,0.5,0.5,0.5,0.5,-0.5,0.5,0.5,0.5,0.5,0.5,0.5,-0.5,-0.5,0.5,-0.5,-0.5,-0.5,-0.5,-0.5,-0.5,0.5,-0.5,0.5,0.5,0.5,0.5,-0.5,0.5,-0.5,0.5,0.5,-0.5,-0.5,0.5,0.5,0.5,-0.5,0.5,-0.5,-0.5,0.5,0.5,0.5,-0.5,0.5,-0.5,0.5,0.5,-0.5,-0.5,0.5,0.5,0.5,-0.5,-0.5,-0.5,-0.5,-0.5,0.5,-0.5,0.5,-0.5,-0.5,-0.5,-0.5,0.5,-0.5,-0.5,-0.5,0.5,-0.5,0.5,0.5,0.5,0.5,-0.5,0.5,0.5,
 
@@ -176,6 +179,10 @@ const shapeArray = [
 ];
 
 let uvArray= [
+	// Plane
+	1.0, 1.0,  0.0, 0.0,  0.0, 1.0,
+	1.0, 1.0,  1.0, 0.0,  0.0, 0.0,
+
 	// Cube (+X, -X, +Y, -Y, +Z, -Z)
 	0.625,0.5,0.625,0.25,0.375,0.25,0.625,0.75,0.625,0.5,0.375,0.5,0.375,0.5,0.125,0.25,0.125,0.5,0.875,0.5,0.875,0.25,0.625,0.25,0.625,1,0.625,0.75,0.375,0.75,0.375,0.5,0.375,0.25,0.125,0.25,0.875,0.5,0.625,0.25,0.625,0.5,0.625,1,0.375,0.75,0.375,1,0.625,0.25,0.375,0,0.375,0.25,0.625,0.75,0.375,0.5,0.375,0.75,0.625,0.5,0.375,0.25,0.375,0.5,0.625,0.25,0.625,0,0.375,0,
 
@@ -189,9 +196,10 @@ let uvArray= [
 const cylinderVerts = makeUnitCylinder(8);
 const cylinder16Verts = makeUnitCylinder(16);
 
-const CUBE_OFFSET = 0;
-const SLANT_OFFSET = 36;
-const RAMP_OFFSET = 72;
+const PLANE_OFFSET = 0;
+const CUBE_OFFSET = 6 + PLANE_OFFSET;
+const SLANT_OFFSET = 36 + CUBE_OFFSET;
+const RAMP_OFFSET = 36 + SLANT_OFFSET;
 const CYLINDER_OFFSET = (shapeArray.length / 3);
 shapeArray.push(...cylinderVerts);
 const CYLINDER16_OFFSET = (shapeArray.length / 3);
@@ -267,8 +275,9 @@ export default class Shape {
 	 * @param {Array<number>} tint - RGBA color
 	 * @param {boolean} clipAlpha - Should rendering use alpha clipping?
 	 * @param {string|null} texturePath - Optional texture path
+	 * @param {MaterialProperties} material - Material settings
 	 */
-	constructor(transform, tint, clipAlpha = false, texturePath = null) {
+	constructor(transform, tint, clipAlpha = false, texturePath = null, material = null) {
 		this.transform = transform;
 		if (!transform) {
 			this.transform = new Transform();
@@ -289,6 +298,12 @@ export default class Shape {
 			blendDst: null,
 		};
 
+		this.shininess = 32.0;
+		this.specularStrength = 0.3;
+		this.rimStrength = 0.2;
+		this.UVScale = [1.0, 1.0];
+		this.setMaterial(material);
+
 		this.constructor.initSharedBuffer();
 		
 		if (texturePath) {
@@ -299,6 +314,15 @@ export default class Shape {
 	setTint() {
 		const [r, g, b, a] = this.tint;
 		window.GL.uniform4f(window.u_FragColor, r, g, b, a);
+	}
+
+	setMaterial(props) {
+		if (!props) return this;
+		if (props.shininess !== undefined) this.shininess = props.shininess;
+		if (props.specularStrength !== undefined) this.specularStrength = props.specularStrength;
+		if (props.rimStrength !== undefined) this.rimStrength = props.rimStrength;
+		if (props.UVScale !== undefined) this.UVScale = props.UVScale;
+		return this;
 	}
 
 	/**
@@ -358,6 +382,11 @@ export default class Shape {
 		this.setTint();
 		const GL = window.GL;
 		const C = this.constructor;
+
+		GL.uniform1f(window.u_Shininess, this.shininess);
+		GL.uniform1f(window.u_SpecularStrength, this.specularStrength);
+		GL.uniform1f(window.u_RimStrength, this.rimStrength);
+		GL.uniform2f(window.u_UVScale, ...this.UVScale);
 		
 		// Use instance properties if they exist (Mesh), otherwise use static (Cube, etc.)
 		const vBuffer = this.vBuffer ?? C.vBuffer;
@@ -490,6 +519,56 @@ export default class Shape {
 			S.blendDst = prev.blendDst;
 		}
 	}
+
+	/**
+	 * Create a clone that shares buffers but has unique transform and color
+	 * @param {Transform|null} transform - New transform (or null for default)
+	 * @param {Array<number>|null} colour - New color (or null to copy original)
+	 * @returns {Shape}
+	 */
+	clone(transform = null, colour = null) {
+		const clone = Object.create(Shape.prototype);
+		
+		// unique properties
+		clone.transform = transform || this.transform.clone();
+		clone.tint = colour || this.tint.slice();
+		clone.shininess = this.shininess;
+		clone.specularStrength = this.specularStrength;
+		clone.rimStrength = this.rimStrength;
+		clone.UVScale = this.UVScale;
+		clone.isClone = true;
+		
+		// share buffers
+		clone.vBuffer = this.vBuffer;
+		clone.nBuffer = this.nBuffer;
+		clone.uvBuffer = this.uvBuffer;
+		clone.vertexCount = this.vertexCount;
+		clone.vertexOffset = this.vertexOffset || 0;
+		clone.texture = this.texture;
+		clone.textureLoaded = this.textureLoaded;
+		clone.glStateOverrides = this.glStateOverrides;
+		
+		return clone;
+	}
+
+	destroy() {
+		// clones don't own the buffers
+		if (this.isClone) return;
+		
+		const GL = window.GL;
+		if (this.vBuffer)  GL.deleteBuffer(this.vBuffer);
+		if (this.nBuffer)  GL.deleteBuffer(this.nBuffer);
+		if (this.uvBuffer) GL.deleteBuffer(this.uvBuffer);
+		if (this.texture)  GL.deleteTexture(this.texture);
+	}
+}
+
+export class Plane extends Shape {
+	static vertexData = shapeArray;
+	static vertexCount = 6;
+	static vertexOffset = PLANE_OFFSET;
+	static normalData = normalArray;
+	static uvData = uvArray;
 }
 
 export class Cube extends Shape {
@@ -570,43 +649,5 @@ export class Mesh extends Shape {
 				GL.STATIC_DRAW
 			);
 		}
-	}
-
-	/**
-	 * Create a clone that shares buffers but has unique transform and color
-	 * @param {Transform|null} transform - New transform (or null for default)
-	 * @param {Array<number>|null} colour - New color (or null to copy original)
-	 * @returns {Mesh}
-	 */
-	clone(transform = null, colour = null) {
-		const clonedMesh = Object.create(Mesh.prototype);
-		
-		// unique properties
-		clonedMesh.transform = transform || this.transform.clone();
-		clonedMesh.tint = colour || this.tint.slice();
-		clonedMesh.isClone = true;
-		
-		// share buffers
-		clonedMesh.vBuffer = this.vBuffer;
-		clonedMesh.nBuffer = this.nBuffer;
-		clonedMesh.uvBuffer = this.uvBuffer;
-		clonedMesh.vertexCount = this.vertexCount;
-		clonedMesh.vertexOffset = this.vertexOffset || 0;
-		clonedMesh.texture = this.texture;
-		clonedMesh.textureLoaded = this.textureLoaded;
-		clonedMesh.glStateOverrides = this.glStateOverrides;
-		
-		return clonedMesh;
-	}
-
-	destroy() {
-		// clones don't own the buffers
-		if (this.isClone) return;
-		
-		const GL = window.GL;
-		if (this.vBuffer)  GL.deleteBuffer(this.vBuffer);
-		if (this.nBuffer)  GL.deleteBuffer(this.nBuffer);
-		if (this.uvBuffer) GL.deleteBuffer(this.uvBuffer);
-		if (this.texture)  GL.deleteTexture(this.texture);
 	}
 }

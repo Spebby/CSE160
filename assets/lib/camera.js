@@ -5,10 +5,10 @@ export const CameraMode = {
 	TRACK: 0,
 	FREE: 1,
 	ORBIT: 2,
+	FP: 3,
 };
 
 export default class Camera {
-	transform = null;
 	target = null;
 	
 	mode = CameraMode.ORBIT;
@@ -47,13 +47,21 @@ export default class Camera {
 			[targetX, targetY, targetZ] = [0, 0, 0];
 		}
 		
-		if (this.mode === CameraMode.FREE || this.mode === CameraMode.TRACK) {
+		if (this.mode === CameraMode.FREE || this.mode === CameraMode.FP || this.mode === CameraMode.TRACK) {
 			const forward = (this.keyStates['w'] ? 1 : 0) - (this.keyStates['s'] ? 1 : 0);
-			const right = (this.keyStates['a'] ? 1 : 0) - (this.keyStates['d'] ? 1 : 0);
-			const up = (this.keyStates['e'] ? 1 : 0) - (this.keyStates['q'] ? 1 : 0);
+			const right = (this.keyStates['a'] ? 1 : 0) - (this.keyStates['d'] ? 1 : 0);	
+			let up = (this.keyStates['e'] ? 1 : 0) - (this.keyStates['q'] ? 1 : 0);
+			
+			// FP mode: Apply Q/E rotation FIRST, before calculating movement vectors
+			if (this.mode === CameraMode.FP) {
+				const rotSpeed = 130 * dt;
+				const [rotX, rotY, rotZ] = this.transform.rotation.slice();
+				this.transform.setRot(rotX, rotY - up * rotSpeed, rotZ);
+				up = 0.0; // Don't use for vertical movement
+			}
 			
 			let forwardX, forwardZ, rightX, rightZ;
-			if (this.mode === CameraMode.FREE) {
+			if (this.mode === CameraMode.FREE || this.mode === CameraMode.FP) {
 				const [, angleY] = this._getAngles();
 				({ forwardX, forwardZ, rightX, rightZ } = this._getMovementVectors(angleY));
 			} else {
@@ -92,7 +100,7 @@ export default class Camera {
 			[targetX, targetY, targetZ] = [0, 0, 0];
 		}
 		
-		if (this.mode === CameraMode.FREE) {
+		if (this.mode === CameraMode.FREE || this.mode === CameraMode.FP) {
 			const [angleX, angleY] = this._getAngles();
 			const lookAt = this._getLookAtPoint(angleX, angleY);
 			viewMatrix.setLookAt(camX, camY, camZ, lookAt.x, lookAt.y, lookAt.z, 0, 1, 0);

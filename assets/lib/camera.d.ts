@@ -8,12 +8,13 @@ export const CameraMode: {
     readonly TRACK: 0;
     readonly FREE: 1;
     readonly ORBIT: 2;
+	readonly FP: 3;
 };
 
 export type CameraModeType = typeof CameraMode[keyof typeof CameraMode];
 
 declare class Camera {
-    transform: Transform | null;
+    transform: Transform;
     target: Transform | null;
     
     mode: CameraModeType;
