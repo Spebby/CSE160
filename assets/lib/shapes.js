@@ -15,7 +15,7 @@ function makeUnitCylinder(radialSegments = 8) {
 	const h = 0.5;
 	const angleStep = (2 * Math.PI) / radialSegments;
   
-	// Build sides
+	// build sides
 	for (let i = 0; i < radialSegments; i++) {
 		const theta0 = i * angleStep;
 		const theta1 = ((i + 1) % radialSegments) * angleStep;
@@ -36,8 +36,7 @@ function makeUnitCylinder(radialSegments = 8) {
 		);
 	}
   
-  
-	// Build bottom cap
+	// bottom cap
 	for (let i = 0; i < radialSegments; i++) {
 		const theta0 = i * angleStep;
 		const theta1 = (i + 1) * angleStep;
@@ -54,7 +53,7 @@ function makeUnitCylinder(radialSegments = 8) {
 		);
 	}
 	  
-	// Build top cap
+	// top cap
 	for (let i = 0; i < radialSegments; i++) {
 		const theta0 = i * angleStep;
 		const theta1 = (i + 1) * angleStep;
@@ -72,6 +71,70 @@ function makeUnitCylinder(radialSegments = 8) {
 	}
 	  
 	return vertices;
+}
+
+// Generates a UV mapping that matches blender's default Cylinder unwrap.
+function makeUnitCylinderUV(radialSegments = 8) {
+	const uvs = [];
+	const capRadius = 0.24;
+
+	const offset = -0.25;  // This matches Blender
+	
+	for (let i = 0; i < radialSegments; i++) {
+		// No modulo - UVs will range from 1.25 to 0.25
+		const u0 = 1.0 - (i / radialSegments) + offset;
+		const u1 = 1.0 - ((i + 1) / radialSegments) + offset;
+		
+		uvs.push(
+			u0, 0.5,
+			u0, 0.0,
+			u1, 0.0
+		);
+		
+		uvs.push(
+			u0, 0.5,
+			u1, 0.0,
+			u1, 0.5
+		);
+	}
+
+
+	
+	// Bottom cap - RIGHT circle
+	for (let i = 0; i < radialSegments; i++) {
+		const theta0 = (i / radialSegments) * Math.PI * 2;
+		const theta1 = ((i + 1) / radialSegments) * Math.PI * 2;
+		
+		const u0 = 0.75 + capRadius * Math.cos(theta0);
+		const v0 = 0.75 + capRadius * Math.sin(theta0);
+		const u1 = 0.75 + capRadius * Math.cos(theta1);
+		const v1 = 0.75 + capRadius * Math.sin(theta1);
+		
+		uvs.push(
+			0.75, 0.75,
+			u0, v0,
+			u1, v1
+		);
+	}
+	
+	// Top cap - LEFT circle
+	for (let i = 0; i < radialSegments; i++) {
+		const theta0 = (i / radialSegments) * Math.PI * 2;
+		const theta1 = ((i + 1) / radialSegments) * Math.PI * 2;
+		
+		const u0 = 0.25 + capRadius * Math.cos(theta0);
+		const v0 = 0.75 + capRadius * Math.sin(theta0);
+		const u1 = 0.25 + capRadius * Math.cos(theta1);
+		const v1 = 0.75 + capRadius * Math.sin(theta1);
+		
+		uvs.push(
+			0.25, 0.75,
+			u1, v1,
+			u0, v0
+		);
+	}
+	
+	return uvs;
 }
 
 function generateNormals(vertices) {
@@ -103,28 +166,24 @@ function generateNormals(vertices) {
 
 const shapeArray = [
 	 // Cube (+X, -X, +Y, -Y, +Z, -Z)
-	 0.5, -0.5,  0.5,    0.5, -0.5, -0.5,    0.5,  0.5, -0.5,    0.5, -0.5,  0.5,    0.5,  0.5, -0.5,    0.5,  0.5,  0.5,
-	-0.5, -0.5, -0.5,   -0.5, -0.5,  0.5,   -0.5,  0.5,  0.5,   -0.5, -0.5, -0.5,   -0.5,  0.5,  0.5,   -0.5,  0.5, -0.5,
-	-0.5,  0.5,  0.5,    0.5,  0.5,  0.5,    0.5,  0.5, -0.5,   -0.5,  0.5,  0.5,    0.5,  0.5, -0.5,   -0.5,  0.5, -0.5,
-	-0.5, -0.5, -0.5,    0.5, -0.5, -0.5,    0.5, -0.5,  0.5,   -0.5, -0.5, -0.5,    0.5, -0.5,  0.5,   -0.5, -0.5,  0.5,
-	-0.5, -0.5,  0.5,    0.5, -0.5,  0.5,    0.5,  0.5,  0.5,   -0.5, -0.5,  0.5,    0.5,  0.5,  0.5,   -0.5,  0.5,  0.5,
-	 0.5, -0.5, -0.5,   -0.5, -0.5, -0.5,   -0.5,  0.5, -0.5,    0.5, -0.5, -0.5,   -0.5,  0.5, -0.5,    0.5,  0.5, -0.5,
+	 0.5,-0.5,-0.5,0.5,-0.5,0.5,-0.5,-0.5,0.5,0.5,0.5,-0.5,0.5,-0.5,-0.5,-0.5,-0.5,-0.5,-0.5,-0.5,-0.5,-0.5,0.5,0.5,-0.5,0.5,-0.5,0.5,0.5,-0.5,0.5,0.5,0.5,0.5,-0.5,0.5,0.5,0.5,0.5,0.5,0.5,-0.5,-0.5,0.5,-0.5,-0.5,-0.5,-0.5,-0.5,-0.5,0.5,-0.5,0.5,0.5,0.5,0.5,-0.5,0.5,-0.5,0.5,0.5,-0.5,-0.5,0.5,0.5,0.5,-0.5,0.5,-0.5,-0.5,0.5,0.5,0.5,-0.5,0.5,-0.5,0.5,0.5,-0.5,-0.5,0.5,0.5,0.5,-0.5,-0.5,-0.5,-0.5,-0.5,0.5,-0.5,0.5,-0.5,-0.5,-0.5,-0.5,0.5,-0.5,-0.5,-0.5,0.5,-0.5,0.5,0.5,0.5,0.5,-0.5,0.5,0.5,
 
-	 // Slanted cube (+X, -X, +Y, -Y, +Z, -Z)
-	 0.5, -0.375, -0.5,    0.5,  0.625, -0.5,    0.5,  0.625,  0.5,    0.5, -0.375, -0.5,    0.5,  0.625,  0.5,    0.5,  0.125,  0.5,
-	-0.5, -0.375, -0.5,   -0.5,  0.125,  0.5,   -0.5,  0.625,  0.5,   -0.5, -0.375, -0.5,   -0.5,  0.625,  0.5,   -0.5,  0.625, -0.5,
-	-0.5,  0.625, -0.5,   -0.5,  0.625,  0.5,    0.5,  0.625,  0.5,   -0.5,  0.625, -0.5,    0.5,  0.625,  0.5,    0.5,  0.625, -0.5,
-	-0.5, -0.375, -0.5,    0.5, -0.375, -0.5,    0.5,  0.125,  0.5,   -0.5, -0.375, -0.5,    0.5,  0.125,  0.5,   -0.5,  0.125,  0.5,
-	-0.5,  0.125,  0.5,    0.5,  0.125,  0.5,    0.5,  0.625,  0.5,   -0.5,  0.125,  0.5,    0.5,  0.625,  0.5,   -0.5,  0.625,  0.5,
-	-0.5, -0.375, -0.5,   -0.5,  0.625, -0.5,    0.5,  0.625, -0.5,   -0.5, -0.375, -0.5,    0.5,  0.625, -0.5,    0.5, -0.375, -0.5,
+	// Slanted cube (+X, -X, +Y, -Y, +Z, -Z)
+	-0.5,0.125,0.5,0.5,-0.375,-0.5,0.5,0.125,0.5,0.5,0.125,0.5,0.5,0.625,-0.5,0.5,0.625,0.5,-0.5,0.625,-0.5,-0.5,0.125,0.5,-0.5,0.625,0.5,0.5,0.625,-0.5,-0.5,0.625,0.5,0.5,0.625,0.5,-0.5,0.625,0.5,0.5,0.125,0.5,0.5,0.625,0.5,0.5,-0.375,-0.5,-0.5,0.625,-0.5,0.5,0.625,-0.5,-0.5,0.125,0.5,-0.5,-0.375,-0.5,0.5,-0.375,-0.5,0.5,0.125,0.5,0.5,-0.375,-0.5,0.5,0.625,-0.5,-0.5,0.625,-0.5,-0.5,-0.375,-0.5,-0.5,0.125,0.5,0.5,0.625,-0.5,-0.5,0.625,-0.5,-0.5,0.625,0.5,-0.5,0.625,0.5,-0.5,0.125,0.5,0.5,0.125,0.5,0.5,-0.375,-0.5,-0.5,-0.375,-0.5,-0.5,0.625,-0.5,
 
-	 // Slanted cube (+X, -X, +Y, -Y, +Z, -Z)
-	 0.5, -0.375, -0.5,    0.5,  0.625,  0.5,    0.5,  0.125,  0.5,    0.5, -0.375, -0.5,    0.5,  0.125, -0.5,    0.5,  0.625,  0.5,
-	-0.5, -0.375, -0.5,   -0.5,  0.125,  0.5,   -0.5,  0.625,  0.5,   -0.5, -0.375, -0.5,   -0.5,  0.625,  0.5,   -0.5,  0.125, -0.5,
-	-0.5,  0.125, -0.5,   -0.5,  0.625,  0.5,    0.5,  0.625,  0.5,   -0.5,  0.125, -0.5,    0.5,  0.625,  0.5,    0.5,  0.125, -0.5,
-	-0.5, -0.375, -0.5,    0.5, -0.375, -0.5,    0.5,  0.125,  0.5,   -0.5, -0.375, -0.5,    0.5,  0.125,  0.5,   -0.5,  0.125,  0.5, 
-	-0.5,  0.125,  0.5,    0.5,  0.125,  0.5,    0.5,  0.625,  0.5,   -0.5,  0.125,  0.5,    0.5,  0.625,  0.5,   -0.5,  0.625,  0.5, 
-	-0.5, -0.375, -0.5,   -0.5,  0.125, -0.5,    0.5,  0.125, -0.5,   -0.5, -0.375, -0.5,    0.5,  0.125, -0.5,    0.5, -0.375, -0.5 
+	// Ramp (+X, -X, +Y, -Y, +Z, -Z)
+	0.5,-0.375,-0.5,0.5,0.625,0.5,0.5,0.125,0.5,0.5,-0.375,-0.5,0.5,0.125,-0.5,0.5,0.625,0.5,-0.5,-0.375,-0.5,-0.5,0.125,0.5,-0.5,0.625,0.5,-0.5,-0.375,-0.5,-0.5,0.625,0.5,-0.5,0.125,-0.5,-0.5,0.125,-0.5,-0.5,0.625,0.5,0.5,0.625,0.5,-0.5,0.125,-0.5,0.5,0.625,0.5,0.5,0.125,-0.5,-0.5,-0.375,-0.5,0.5,-0.375,-0.5,0.5,0.125,0.5,-0.5,-0.375,-0.5,0.5,0.125,0.5,-0.5,0.125,0.5,-0.5,0.125,0.5,0.5,0.125,0.5,0.5,0.625,0.5,-0.5,0.125,0.5,0.5,0.625,0.5,-0.5,0.625,0.5,-0.5,-0.375,-0.5,-0.5,0.125,-0.5,0.5,0.125,-0.5,-0.5,-0.375,-0.5,0.5,0.125,-0.5,0.5,-0.375,-0.5
+];
+
+let uvArray= [
+	// Cube (+X, -X, +Y, -Y, +Z, -Z)
+	0.625,0.5,0.625,0.25,0.375,0.25,0.625,0.75,0.625,0.5,0.375,0.5,0.375,0.5,0.125,0.25,0.125,0.5,0.875,0.5,0.875,0.25,0.625,0.25,0.625,1,0.625,0.75,0.375,0.75,0.375,0.5,0.375,0.25,0.125,0.25,0.875,0.5,0.625,0.25,0.625,0.5,0.625,1,0.375,0.75,0.375,1,0.625,0.25,0.375,0,0.375,0.25,0.625,0.75,0.375,0.5,0.375,0.75,0.625,0.5,0.375,0.25,0.375,0.5,0.625,0.25,0.625,0,0.375,0,
+
+	// Slant (+X, -X, +Y, -Y, +Z, -Z)
+	0.650503,0.999033,0.37631,0.689513,0.374837,0.997716,0.24111,0.13752299999999995,0.377626,0.41384699999999996,0.378943,0.138181,0.653292,0.415164,0.792441,0.14015599999999995,0.654609,0.139498,0.377626,0.41384699999999996,0.654609,0.139498,0.378943,0.138181,0.654609,0.139498,0.379601,0.00034800000000001496,0.378943,0.138181,0.37631,0.689513,0.653292,0.415164,0.377626,0.41384699999999996,0.650503,0.999033,0.651975,0.690829,0.37631,0.689513,0.24111,0.13752299999999995,0.101961,0.41252999999999995,0.377626,0.41384699999999996,0.653292,0.415164,0.928958,0.41647999999999996,0.792441,0.14015599999999995,0.377626,0.41384699999999996,0.653292,0.415164,0.654609,0.139498,0.654609,0.139498,0.655267,0.0016650000000000276,0.379601,0.00034800000000001496,0.37631,0.689513,0.651975,0.690829,0.653292,0.415164,
+
+	// Ramp (+X, -X, +Y, -Y, +Z, -Z)1
+	0.207364,0.569088,0.345539,0.15456099999999995,0.207363,0.223649,0.207364,0.569088,0.345539,0.5,0.345539,0.15456099999999995,0.792684,0.569088,0.792684,0.223649,0.654509,0.15456099999999995,0.792684,0.569088,0.654509,0.15456099999999995,0.654509,0.5,0.654509,0.5,0.654509,0.15456099999999995,0.345539,0.15456099999999995,0.654509,0.5,0.345539,0.15456099999999995,0.345539,0.5,0.654509,0.654485,0.345539,0.654485,0.345539,0.999923,0.654509,0.654485,0.345539,0.999923,0.654509,0.999923,0.654509,0.00007699999999999374,0.345539,0.00007699999999999374,0.345539,0.15456099999999995,0.654509,0.00007699999999999374,0.345539,0.15456099999999995,0.654509,0.15456099999999995,0.654509,0.654485,0.654509,0.5,0.345539,0.5,0.654509,0.654485,0.345539,0.5,0.345539,0.654485
 ];
 
 const cylinderVerts = makeUnitCylinder(8);
@@ -138,17 +197,20 @@ shapeArray.push(...cylinderVerts);
 const CYLINDER16_OFFSET = (shapeArray.length / 3);
 shapeArray.push(...cylinder16Verts);
 
+uvArray.push(...makeUnitCylinderUV(8));
+uvArray.push(...makeUnitCylinderUV(16));
+
 const normalArray = generateNormals(shapeArray);
 
 // shape interface
 export default class Shape {
 	static vBuffer = null;
-	static vertexData = shapeArray;
+	static vertexData = null;
 	static vertexCount = 0;
 	static vertexOffset = 0;
 
 	static nBuffer = null;
-	static normalData = normalArray;
+	static normalData = null;
 
 	static uvBuffer = null;
 	static uvData = null;
@@ -313,9 +375,11 @@ export default class Shape {
 }
 
 export class Cube extends Shape {
+	static vertexData = shapeArray;
 	static vertexCount = 36;
 	static vertexOffset = CUBE_OFFSET;
-
+	static normalData = normalArray;
+	static uvData = uvArray;
 }
 
 export class SlantedCube extends Cube {
@@ -327,8 +391,11 @@ export class Ramp extends Cube {
 }
 
 export class Cylinder extends Shape {
+	static vertexData = shapeArray;
 	static vertexCount = (cylinderVerts.length / 3);
 	static vertexOffset = CYLINDER_OFFSET;
+	static normalData = normalArray;
+	static uvData = uvArray;
 }
 
 export class Cylinder16 extends Cylinder {
@@ -386,12 +453,44 @@ export class Mesh extends Shape {
 		}
 	}
 
-	// Cleanup method for when mesh is destroyed
+	/**
+	 * Create a clone that shares buffers but has unique transform and color
+	 * @param {Transform|null} transform - New transform (or null for default)
+	 * @param {Array<number>|null} colour - New color (or null to copy original)
+	 * @returns {Mesh}
+	 */
+	clone(transform = null, colour = null) {
+		const clonedMesh = Object.create(Mesh.prototype);
+		
+		// Set unique properties
+		clonedMesh.transform = transform || this.transform.clone();
+		clonedMesh.tint = colour || this.tint.slice();
+		
+		// Share buffer references (no GPU memory duplication!)
+		clonedMesh.vBuffer = this.vBuffer;
+		clonedMesh.nBuffer = this.nBuffer;
+		clonedMesh.uvBuffer = this.uvBuffer;
+		clonedMesh.vertexCount = this.vertexCount;
+		clonedMesh.vertexOffset = this.vertexOffset || 0;
+		
+		// Share texture references
+		clonedMesh.texture = this.texture;
+		clonedMesh.textureLoaded = this.textureLoaded;
+		
+		// Mark as clone so it doesn't delete shared buffers
+		clonedMesh.isClone = true;
+		
+		return clonedMesh;
+	}
+
 	destroy() {
+		// clones don't own the buffers
+		if (this.isClone) return;
+		
 		const GL = window.GL;
-		if (this.vBuffer) GL.deleteBuffer(this.vBuffer);
-		if (this.nBuffer) GL.deleteBuffer(this.nBuffer);
+		if (this.vBuffer)  GL.deleteBuffer(this.vBuffer);
+		if (this.nBuffer)  GL.deleteBuffer(this.nBuffer);
 		if (this.uvBuffer) GL.deleteBuffer(this.uvBuffer);
-		if (this.texture) GL.deleteTexture(this.texture);
+		if (this.texture)  GL.deleteTexture(this.texture);
 	}
 }

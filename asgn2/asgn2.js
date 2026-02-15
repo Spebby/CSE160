@@ -316,12 +316,6 @@ function connectVariablesToGLSL() {
 	window.u_ProjectionMatrix = tProj;
 }
 
-function click(env) {
-	const [x, y] = screenSpaceToCanvasSpace(env);
-
-
-}
-
 function tick() {
 	const now = performance.now();
 	const nowSeconds = now / 1000;
@@ -413,6 +407,8 @@ function updateBulkRotation(bone, segment, offsetX = 0, offsetY = 0, offsetZ = 0
 }
 
 function setupAnimationListeners() {
+	document.getElementById('exportKeyframe').addEventListener('click', exportKeyframe);
+
 	['headX', 'headY', 'headZ'].forEach(id => {
 		document.getElementById(id).addEventListener('input', () => {
 			updateBulkRotation('head', 'head');
@@ -502,10 +498,33 @@ function setupAnimationListeners() {
 	document.getElementById('rFootX').addEventListener('input', function() {
 		const val = parseFloat(this.value);
 		ANT_ANIM.setUserRotation('rFoot', [val, 0, 0]);
-	});
+	});	
 }
 
-
+function exportKeyframe() {
+	const rigInfo = ANTEATER.getRigInfo();
+	
+	// keyframe object template
+	const keyframe = {
+		time: 0.0,
+		transforms: {}
+	};
+	
+	for (const boneName in rigInfo) {
+		keyframe.transforms[boneName] = {
+			rotation: rigInfo[boneName]
+		};
+	}
+	
+	const jsonString = JSON.stringify(keyframe, null, '\t');
+	const blob = new Blob([jsonString], { type: 'application/json' });
+	const url = URL.createObjectURL(blob);
+	const link = document.createElement('a');
+	link.href = url;
+	link.download = 'keyframe.txt';
+	link.click();
+	URL.revokeObjectURL(url);
+}
 
 // a bunch of debug stuff
 function renderBonesDebug() {

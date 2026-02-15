@@ -87,7 +87,7 @@ async function main(): Promise<void> {
 	ANTEATER = new Anteater(new Transform([0,0,0], [0,0,0], [0.35,0.35,0.35]));
 	ANT_ANIM = new AnimMan(ANTEATER.bones, animations);
 	ANT_ANIM.queueAnim('idle');
-	
+
 	// Initialize camera with Transforms
 	const cameraTransform = new Transform([0, 0, 0], [0, 0, 0], [1, 1, 1]);
 	CAMERA = new Camera(cameraTransform, ANTEATER.cameraFocus, CameraMode.FREE);
@@ -282,11 +282,9 @@ function renderAllShapes(dt: number): void {
 	GL.clear(GL.COLOR_BUFFER_BIT | GL.DEPTH_BUFFER_BIT);
 	
 	// Example: render a spinning cube
-	const cubeTransform = new Transform([0, 0, -5], [dt * 20, dt * 30, 0], [1, 1, 1]);
-	const cube = new Cube(cubeTransform, [1.0, 0.5, 0.2, 1.0]);
 	ANTEATER.render();
-	cube.render();
 	gun.render();
+
 }
 
 function resizeCanvas(): void {

@@ -1,6 +1,20 @@
 {
 	"projects": [
 		{
+			"title": "???",
+			"description": "Three-JS Project. Incomplete.",
+			"image": "",
+			"tags": [],
+			"link": "../peristeria"
+		},
+		{
+			"title": "???",
+			"description": "Lighting project. Incomplete.",
+			"image": "",
+			"tags": [],
+			"link": "./asgn4"
+		},
+		{
 			"title": "Blocky World",
 			"description": "A 3D animation of a lowpoly block animal, a giant anteater, using WebGL.",
 			"image": "./assets/images/animal.png",
