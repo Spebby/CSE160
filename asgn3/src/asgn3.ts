@@ -171,21 +171,43 @@ async function main(): Promise<void> {
 		rimStrength: 0.0 
 	});
 	treeFoliage.setGLState({ cullFace: false, blend: false });
-	meshes.push(treeMesh);
-	meshes.push(treeFoliage);
 	
 	ANTEATER = new Anteater(new Transform([5,0,0], [0,-180,0], [0.5,0.5,0.5]), animations);
-	ANTEATER.setMaxRoamDistance(15); // Stay within 32
+	ANTEATER.setMaxRoamDistance(64);
 	ANTEATER.setMoveSpeed(3.0);
 	ANTEATER.setWanderTiming(3.0, 0.8)
-
 	CAMERA.target = ANTEATER.cameraFocus;
-	
+
+	placeTree(0, 0, 1.5);
+	GRID.block( 0,  0);
+	GRID.block( 0,  1);
+	GRID.block( 0, -1);
+	GRID.block( 1,  0);
+	GRID.block( 1,  1);
+	GRID.block( 1, -1);
+	GRID.block(-1,  0);
+	GRID.block(-1,  1);
+	GRID.block(-1, -1);
+
+	const treePoints = generatePoints({
+		spawnRadius: 128,
+		centerExclusionRadius: 10,
+		minDistance: 8,
+		targetCount: 24,
+		gridSize: 2,
+	});
+
+	for (const [x, z] of treePoints) {
+		placeTree(x, z);
+	}
+
 	requestAnimationFrame(tick);
 }
 
-
-function placeTree(point: Transform): void {
+function placeTree(x: number, z: number, scale: number = 1.0): void {
+	GRID.block(x, z)
+	const [worldX, worldZ] = GRID.getRandomPositionInCell(x, z);
+	let point = new Transform([worldX, 0, worldZ], [0, Math.random() * 360, 0], [scale, scale, scale]);
 	meshes.push(treeMesh.clone(point));
 	meshes.push(treeFoliage.clone(point));
 }
@@ -218,51 +240,23 @@ async function initMushrooms(): Promise<void> {
 	mushroomMeshes[0].alphaCutout = 0.5;
 
 	MUSH_MAN = new MushroomMan(mushroomMeshes, GRID);
-	MUSH_MAN.placeMushroom(0, -2);
+	MUSH_MAN.placeMushroom(0, -3);
 
-	// poisson disk sample (with gap around centre) and attempt to place ~64 mushrooms.
-	const targetCount = 32;
-	const minDistance = 5;
-	const centerExclusionRadius = 10.0; // Gap around center
-	const spawnRadius = 96.0; // How far out to spawn mushrooms
-	
-	const samples: [number, number][] = [];
-	const maxAttempts = targetCount * 10;
-	
-	for (let attempt = 0; attempt < maxAttempts && samples.length < targetCount; attempt++) {
-		// Generate random point in annulus (ring)
-		const angle = Math.random() * Math.PI * 2;
-		const radius = centerExclusionRadius + Math.random() * (spawnRadius - centerExclusionRadius);
-		
-		const x = Math.cos(angle) * radius;
-		const z = Math.sin(angle) * radius;
-		
-		// Check if far enough from existing samples
-		let valid = true;
-		for (const [sx, sz] of samples) {
-			const dx = x - sx;
-			const dz = z - sz;
-			if (Math.sqrt(dx * dx + dz * dz) < minDistance) {
-				valid = false;
-				break;
-			}
-		}
-		
-		if (valid) {
-			samples.push([x, z]);
-		}
-	}
-	
-	// Place mushrooms
+
+	const mushroomPoints = generatePoints({
+		spawnRadius: 96,
+		centerExclusionRadius: 10,
+		minDistance: 5,
+		targetCount: 32,
+	});
+
 	let placed = 0;
-	for (const [x, z] of samples) {
+	for (const [x, z] of mushroomPoints) {
 		const mushroom = MUSH_MAN.placeMushroom(x, z);
-		if (mushroom) {
-			placed++;
-		}
+		if (mushroom) placed++;
 	}
-	
-	console.log(`Placed ${placed} mushrooms (target: ${targetCount})`);
+
+	console.log(`Placed ${placed} mushrooms (target: 32)`);
 }
 
 function setupWebGL(): void {
@@ -468,9 +462,74 @@ function resizeCanvas(): void {
 function updateProjMatrix(): void {
 	const projMatrix = new Matrix4();
 	const aspect = W / H;
-	projMatrix.setPerspective(70, aspect, 0.05, 100);
+	projMatrix.setPerspective(70, aspect, 0.05, 128);
 	GL.uniformMatrix4fv(window.u_ProjectionMatrix, false, projMatrix.elements);
 }
 
 // Start the application
 main();
+
+
+// Tree & Mushroom placement helpers
+type SamplePoint = [number, number];
+interface PlacementOptions {
+	spawnRadius: number;
+	centerExclusionRadius?: number;
+	minDistance: number;
+	targetCount: number;
+	gridSize?: number;
+}
+
+/**
+ * Generate points in an annulus with a minimum distance constraint
+ */
+function generatePoints(options: PlacementOptions): SamplePoint[] {
+	const {
+		spawnRadius,
+		centerExclusionRadius = 0,
+		minDistance,
+		targetCount,
+		gridSize,
+	} = options;
+
+	const samples: SamplePoint[] = [];
+	const occupiedGrid = new Set<string>();
+
+	const maxAttempts = targetCount * 10;
+
+	for (let attempt = 0; attempt < maxAttempts && samples.length < targetCount; attempt++) {
+		const angle = Math.random() * Math.PI * 2;
+		const radius = centerExclusionRadius + Math.random() * (spawnRadius - centerExclusionRadius);
+		let x = Math.cos(angle) * radius;
+		let z = Math.sin(angle) * radius;
+
+		// If using a grid, snap point and check occupancy
+		if (gridSize) {
+			const gx = Math.round(x / gridSize);
+			const gz = Math.round(z / gridSize);
+			const key = `${gx},${gz}`;
+			if (occupiedGrid.has(key)) continue;
+
+			occupiedGrid.add(key);
+			x = gx * gridSize;
+			z = gz * gridSize;
+		}
+
+		// Check minimum distance from previous samples
+		let valid = true;
+		for (const [sx, sz] of samples) {
+			const dx = x - sx;
+			const dz = z - sz;
+			if (Math.sqrt(dx * dx + dz * dz) < minDistance) {
+				valid = false;
+				break;
+			}
+		}
+
+		if (valid) {
+			samples.push([x, z]);
+		}
+	}
+
+	return samples;
+}
