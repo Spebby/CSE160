@@ -1,6 +1,6 @@
 /// <reference types="stats.js" />
 
-import { Cube, Mesh } from '../../assets/lib/shapes.js';
+import Shape, { Cube, Mesh } from '../../assets/lib/shapes.js';
 import { AnimMan } from '../../assets/lib/animation.js';
 import Transform from '../../assets/lib/transform.js';
 import Camera, { CameraMode } from '../../assets/lib/camera.js';
@@ -40,24 +40,30 @@ const FSHADER_SOURCE = `
 	uniform vec4 u_FragColor;
 	uniform sampler2D u_Sampler;
 	uniform int u_UseTexture;
+	uniform float u_AlphaCutout;
 	
 	const vec3 lightDir = normalize(vec3(10.0, 20.0, 10.0));
 	const vec3 ambientColor = vec3(0.1, 0.1, 0.1);
 	const vec3 diffuseColor = vec3(0.4, 0.4, 0.4);
 	const float screenGamma = 2.2;
-	
+
 	void main() {
 		vec3 normal = normalize(v_Normal);
 		float lambertian = max(dot(normal, lightDir), 0.0);
 		vec3 colourLinear = ambientColor + diffuseColor * lambertian;
 		vec3 colourGammaCorrected = pow(colourLinear, vec3(1.0 / screenGamma));
+
+		vec4 baseColor = u_FragColor;
 		
 		if (u_UseTexture == 1) {
-			vec4 texColor = texture2D(u_Sampler, v_TexCoord);
-			gl_FragColor = texColor * vec4(colourGammaCorrected * u_FragColor.rgb, 1.0);
-		} else {
-			gl_FragColor = vec4(colourGammaCorrected * u_FragColor.rgb, 1.0);
+			baseColor *= texture2D(u_Sampler, v_TexCoord);
 		}
+		
+		if (baseColor.a < u_AlphaCutout) {
+			discard;
+		}
+		
+		gl_FragColor = vec4(colourGammaCorrected * baseColor.rgb, baseColor.a);
 	}`;
 
 let canvas: HTMLCanvasElement;
@@ -67,7 +73,6 @@ let START_TIME = performance.now() / 1000.0;
 let CAMERA: Camera;
 let ANTEATER: Anteater;
 let ANT_ANIM: AnimMan;
-let gun: Mesh;
 let DEBUG: boolean;
 let stats = new Stats();
 stats.dom.style.left = "auto";
@@ -75,16 +80,27 @@ stats.dom.style.right = "0";
 stats.showPanel(0);
 document.body.appendChild(stats.dom);
 
+let treeMesh: Mesh;
+let treeFoliage: Mesh;
+let static_meshes: Shape[] = [];
+
 async function main(): Promise<void> {
 	setupWebGL();
 	connectVariablesToGLSL();
 
-	gun = await LoadOBJ('./mp5.obj', './albedo.png');
-	gun.transform.setScale(1, 1, 1);
+	// Init tree
+	let treeRoot = new Transform();
+	treeMesh     = await LoadOBJ('./maple.obj', './maple.png', treeRoot);
+	treeFoliage  = await LoadOBJ('./maple_foliage.obj', './maple_foliage.png', treeRoot);
+	treeFoliage.alphaCutout = 0.6;
+	treeFoliage.setGLState({ cullFace: false, blend: false });
+	static_meshes.push(treeMesh);
+	static_meshes.push(treeFoliage);
+
 	const response = await fetch('../../assets/data/animation.json');
 	const animations = await response.json();
 
-	ANTEATER = new Anteater(new Transform([0,0,0], [0,0,0], [0.35,0.35,0.35]));
+	ANTEATER = new Anteater(new Transform([0,0,0], [0,0,0], [0.5,0.5,0.5]));
 	ANT_ANIM = new AnimMan(ANTEATER.bones, animations);
 	ANT_ANIM.queueAnim('idle');
 
@@ -101,7 +117,18 @@ async function main(): Promise<void> {
 	GL.clear(GL.COLOR_BUFFER_BIT | GL.DEPTH_BUFFER_BIT);
 
 	resizeCanvas();
+
+	
+	// Setup world
+	
+
+
 	requestAnimationFrame(tick);
+}
+
+function placeTree(point: Transform) {
+	static_meshes.push(treeMesh.clone(point));
+	static_meshes.push(treeFoliage.clone(point));
 }
 
 function setupWebGL(): void {
@@ -120,8 +147,11 @@ function setupWebGL(): void {
 	GL.enable(GL.CULL_FACE);
 	GL.cullFace(GL.BACK);
 	GL.enable(GL.DEPTH_TEST);
-	GL.enable(GL.BLEND);
-	GL.blendFunc(GL.SRC_ALPHA, GL.ONE_MINUS_SRC_ALPHA);
+	//GL.enable(GL.BLEND);
+	//GL.blendFunc(GL.SRC_ALPHA, GL.ONE_MINUS_SRC_ALPHA);
+
+	GL.disable(GL.BLEND);
+	GL.enable(GL.SAMPLE_ALPHA_TO_COVERAGE);
 
 	window.GL = GL;
 	window.addEventListener('resize', resizeCanvas);
@@ -225,6 +255,14 @@ function connectVariablesToGLSL(): void {
 	window.u_UseTexture = uUseTexture;
 	GL.uniform1i(window.u_UseTexture, 0); // default to no texture
 
+	const uAlphaCutout = GL.getUniformLocation(GL.program!, 'u_AlphaCutout');
+	if (!uAlphaCutout) {
+		console.log('Failed to get storage location of u_AlphaCutout');
+		// no return - textures are optional
+	}
+	window.u_AlphaCutout = uAlphaCutout;
+	GL.uniform1f(window.u_AlphaCutout, 0.0); // default to no texture
+
 	const tMod = GL.getUniformLocation(GL.program!, 'u_ModelMatrix');
 	if (!tMod) {
 		console.log('Failed to get storage location of u_ModelMatrix');
@@ -283,8 +321,10 @@ function renderAllShapes(dt: number): void {
 	
 	// Example: render a spinning cube
 	ANTEATER.render();
-	gun.render();
 
+	for (const mesh of static_meshes) {
+		mesh.render();
+	}
 }
 
 function resizeCanvas(): void {

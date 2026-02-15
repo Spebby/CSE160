@@ -104,4 +104,5 @@ interface Window {
     u_ProjectionMatrix: WebGLUniformLocation;
     u_Sampler: WebGLUniformLocation | null;
     u_UseTexture: WebGLUniformLocation | null;
+	u_AlphaCutout: WebGLUniformLocation | null;
 }

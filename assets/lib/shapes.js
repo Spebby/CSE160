@@ -215,6 +215,19 @@ export default class Shape {
 	static uvBuffer = null;
 	static uvData = null;
 
+	alphaCutout = 0.0;
+
+	// global state tracking for overrides
+	static glState = {
+		cullFace: true,
+		cullFaceMode: window.GL?.BACK,
+		depthTest: true,
+		depthMask: true,
+		blend: true,
+		blendSrc: window.GL?.SRC_ALPHA,
+		blendDst: window.GL?.ONE_MINUS_SRC_ALPHA,
+	};
+
 	static initSharedBuffer() {
 		if (this.vBuffer) return;
 		if (!this.vertexData)
@@ -252,9 +265,10 @@ export default class Shape {
 	/**
 	 * @param {Transform} transform
 	 * @param {Array<number>} tint - RGBA color
+	 * @param {boolean} clipAlpha - Should rendering use alpha clipping?
 	 * @param {string|null} texturePath - Optional texture path
 	 */
-	constructor(transform, tint, texturePath = null) {
+	constructor(transform, tint, clipAlpha = false, texturePath = null) {
 		this.transform = transform;
 		if (!transform) {
 			this.transform = new Transform();
@@ -262,7 +276,19 @@ export default class Shape {
 		this.tint = tint;
 		this.texture = null;
 		this.textureLoaded = false;
-		
+		this.alphaCutout = clipAlpha;
+	
+		// Per-instance GL state overrides (null = use current state)
+		this.glStateOverrides = {
+			cullFace: null,
+			cullFaceMode: null,
+			depthTest: null,
+			depthMask: null,
+			blend: null,
+			blendSrc: null,
+			blendDst: null,
+		};
+
 		this.constructor.initSharedBuffer();
 		
 		if (texturePath) {
@@ -307,7 +333,6 @@ export default class Shape {
 				image
 			);
 			
-			// Check if image is power of 2
 			if (this.isPowerOf2(image.width) && this.isPowerOf2(image.height)) {
 				GL.generateMipmap(GL.TEXTURE_2D);
 			} else {
@@ -329,6 +354,7 @@ export default class Shape {
 	}
 
 	render() {
+		const prevState = this._applyGLState();
 		this.setTint();
 		const GL = window.GL;
 		const C = this.constructor;
@@ -357,6 +383,7 @@ export default class Shape {
 		GL.enableVertexAttribArray(window.a_Normal);
 		
 		// Bind texture if available
+		GL.uniform1i(window.u_AlphaCutout, this.alphaCutout);
 		if (this.texture && this.textureLoaded && uvBuffer) {
 			GL.activeTexture(GL.TEXTURE0);
 			GL.bindTexture(GL.TEXTURE_2D, this.texture);
@@ -371,6 +398,97 @@ export default class Shape {
 		}
 		
 		GL.drawArrays(GL.TRIANGLES, vertexOffset, vertexCount);
+		this._restoreGLState(prevState);
+	}
+
+	setGLState(overrides) {
+		Object.assign(this.glStateOverrides, overrides);
+		return this;
+	}
+
+	_applyGLState() {
+		const GL = window.GL;
+		const S = Shape.glState;
+		const O = this.glStateOverrides;
+		const prev = {};
+
+		if (O.cullFace !== null && O.cullFace !== S.cullFace) {
+			prev.cullFace = S.cullFace;
+			O.cullFace ? GL.enable(GL.CULL_FACE) : GL.disable(GL.CULL_FACE);
+			S.cullFace = O.cullFace;
+		}
+
+		if (O.cullFaceMode !== null && O.cullFaceMode !== S.cullFaceMode) {
+			prev.cullFaceMode = S.cullFaceMode;
+			GL.cullFace(O.cullFaceMode);
+			S.cullFaceMode = O.cullFaceMode;
+		}
+
+		if (O.depthTest !== null && O.depthTest !== S.depthTest) {
+			prev.depthTest = S.depthTest;
+			O.depthTest ? GL.enable(GL.DEPTH_TEST) : GL.disable(GL.DEPTH_TEST);
+			S.depthTest = O.depthTest;
+		}
+
+		if (O.depthMask !== null && O.depthMask !== S.depthMask) {
+			prev.depthMask = S.depthMask;
+			GL.depthMask(O.depthMask);
+			S.depthMask = O.depthMask;
+		}
+
+		if (O.blend !== null && O.blend !== S.blend) {
+			prev.blend = S.blend;
+			O.blend ? GL.enable(GL.BLEND) : GL.disable(GL.BLEND);
+			S.blend = O.blend;
+		}
+
+		if (O.blendSrc !== null && O.blendDst !== null && 
+		    (O.blendSrc !== S.blendSrc || O.blendDst !== S.blendDst)) {
+			prev.blendSrc = S.blendSrc;
+			prev.blendDst = S.blendDst;
+			GL.blendFunc(O.blendSrc, O.blendDst);
+			S.blendSrc = O.blendSrc;
+			S.blendDst = O.blendDst;
+		}
+
+		return prev;
+	}
+
+	_restoreGLState(prev) {
+		const GL = window.GL;
+		const S = Shape.glState;
+
+		if (prev.cullFace !== undefined && prev.cullFace !== S.cullFace) {
+			prev.cullFace ? GL.enable(GL.CULL_FACE) : GL.disable(GL.CULL_FACE);
+			S.cullFace = prev.cullFace;
+		}
+
+		if (prev.cullFaceMode !== undefined && prev.cullFaceMode !== S.cullFaceMode) {
+			GL.cullFace(prev.cullFaceMode);
+			S.cullFaceMode = prev.cullFaceMode;
+		}
+
+		if (prev.depthTest !== undefined && prev.depthTest !== S.depthTest) {
+			prev.depthTest ? GL.enable(GL.DEPTH_TEST) : GL.disable(GL.DEPTH_TEST);
+			S.depthTest = prev.depthTest;
+		}
+
+		if (prev.depthMask !== undefined && prev.depthMask !== S.depthMask) {
+			GL.depthMask(prev.depthMask);
+			S.depthMask = prev.depthMask;
+		}
+
+		if (prev.blend !== undefined && prev.blend !== S.blend) {
+			prev.blend ? GL.enable(GL.BLEND) : GL.disable(GL.BLEND);
+			S.blend = prev.blend;
+		}
+
+		if (prev.blendSrc !== undefined && prev.blendDst !== undefined &&
+		    (prev.blendSrc !== S.blendSrc || prev.blendDst !== S.blendDst)) {
+			GL.blendFunc(prev.blendSrc, prev.blendDst);
+			S.blendSrc = prev.blendSrc;
+			S.blendDst = prev.blendDst;
+		}
 	}
 }
 
@@ -412,13 +530,14 @@ export class Mesh extends Shape {
 	/**
 	 * @param {Transform|null} transform
 	 * @param {Array<number>} colour
+	 * @param {boolean} clipAlpha
 	 * @param {Float32Array|Array} vertexData - Vertex positions [x,y,z, x,y,z, ...]
 	 * @param {Float32Array|Array} normalData - Normals [x,y,z, x,y,z, ...]
 	 * @param {Float32Array|Array|null} uvData - UV coords [u,v, u,v, ...] (optional)
 	 * @param {string|null} texturePath - Optional texture path
 	 */
-	constructor(transform, colour, vertexData, normalData, uvData = null, texturePath = null) {
-		super(transform, colour, texturePath);
+	constructor(transform, colour, clipAlpha, vertexData, normalData, uvData = null, texturePath = null) {
+		super(transform, colour, clipAlpha, texturePath);
 		this.vertexCount = vertexData.length / 3;
 		
 		const GL = window.GL;
@@ -462,23 +581,20 @@ export class Mesh extends Shape {
 	clone(transform = null, colour = null) {
 		const clonedMesh = Object.create(Mesh.prototype);
 		
-		// Set unique properties
+		// unique properties
 		clonedMesh.transform = transform || this.transform.clone();
 		clonedMesh.tint = colour || this.tint.slice();
+		clonedMesh.isClone = true;
 		
-		// Share buffer references (no GPU memory duplication!)
+		// share buffers
 		clonedMesh.vBuffer = this.vBuffer;
 		clonedMesh.nBuffer = this.nBuffer;
 		clonedMesh.uvBuffer = this.uvBuffer;
 		clonedMesh.vertexCount = this.vertexCount;
 		clonedMesh.vertexOffset = this.vertexOffset || 0;
-		
-		// Share texture references
 		clonedMesh.texture = this.texture;
 		clonedMesh.textureLoaded = this.textureLoaded;
-		
-		// Mark as clone so it doesn't delete shared buffers
-		clonedMesh.isClone = true;
+		clonedMesh.glStateOverrides = this.glStateOverrides;
 		
 		return clonedMesh;
 	}

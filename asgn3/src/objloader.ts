@@ -1,6 +1,7 @@
 import { Mesh } from '../../assets/lib/shapes.js';
+import Transform from '../../assets/lib/transform.js';
 
-export default async function LoadOBJ(filepath: string, albedoPath?: string | null): Promise<Mesh> {
+export default async function LoadOBJ(filepath: string, albedoPath?: string | null, transform?: Transform | null): Promise<Mesh> {
 	const positions: number[][] = [];
 	const normals: number[][] = [];
 	const uvs: number[][] = [];
@@ -73,8 +74,9 @@ export default async function LoadOBJ(filepath: string, albedoPath?: string | nu
 	console.log(`Generated ${vBuff.length / 3} vertices`);
 	
 	return new Mesh(
-		null,
+		transform,
 		[1, 1, 1, 1],
+		0.0,
 		vBuff,
 		nBuff,
 		uvBuff.length ? uvBuff : null,

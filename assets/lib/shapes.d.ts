@@ -10,39 +10,81 @@ declare class Shape {
     static vertexData: number[] | null;
     static vertexCount: number;
     static vertexOffset: number;
-
     static nBuffer: WebGLBuffer | null;
     static normalData: number[] | null;
-
     static uvBuffer: WebGLBuffer | null;
     static uvData: number[] | null;
-
     static initSharedBuffer(): void;
-
+	alphaCutout: float;
+    
+    // ─── GL state tracking ────────────────────────────────────────────
+    static glState: {
+        cullFace: boolean;
+        cullFaceMode: number;
+        depthTest: boolean;
+		depthMask: boolean;
+        blend: boolean;
+        blendSrc: number;
+        blendDst: number;
+    };
+    
     // ─── Instance state ───────────────────────────────────────────────
     transform: Transform;
     tint: [number, number, number, number];
-
     texture: WebGLTexture | null;
     textureLoaded: boolean;
-
+    
+    // GL state overrides (null = use current state)
+    glStateOverrides: {
+        cullFace: boolean | null;
+        cullFaceMode: number | null;
+        depthTest: boolean | null;
+        blend: boolean | null;
+        blendSrc: number | null;
+        blendDst: number | null;
+    };
+    
     // Optional instance overrides (used by Mesh)
     vBuffer?: WebGLBuffer | null;
     nBuffer?: WebGLBuffer | null;
     uvBuffer?: WebGLBuffer | null;
     vertexCount?: number;
     vertexOffset?: number;
-
+   
+	/**
+	 * @param {Transform} transform
+	 * @param {Array<number>} tint - RGBA color
+	 * @param {float} alphaCutout - Should rendering use alpha clipping?
+	 * @param {string|null} texturePath - Optional texture path
+	 */
     constructor(
         transform?: Transform | null,
-        tint: [number, number, number, number],
+        tint?: [number, number, number, number],
+		alphaCutout: float = 0.0,
         texturePath?: string | null
     );
-
+    
+    /**
+     * Set GL state overrides for this shape instance
+     * @param overrides - Partial GL state to override
+     */
+    setGLState(overrides: Partial<{
+        cullFace: boolean;
+        cullFaceMode: number;
+        depthTest: boolean;
+        blend: boolean;
+        blendSrc: number;
+        blendDst: number;
+    }>): this;
+    
     setTint(): void;
     loadTexture(path: string): void;
     isPowerOf2(value: number): boolean;
     render(): void;
+    
+    // Private state management methods
+    _applyGLState(): Record<string, any>;
+    _restoreGLState(prevState: Record<string, any>): void;
 }
 
 declare class Cube extends Shape {
@@ -80,11 +122,17 @@ declare class Mesh extends Shape {
     constructor(
         transform?: Transform | null,
         colour: [number, number, number, number],
+		alphaCutout: float,
         vertexData: Float32Array | number[],
         normalData: Float32Array | number[],
         uvData?: Float32Array | number[] | null,
         texturePath?: string | null
     );
+
+	clone(
+		transform?: Transform | null,
+		colour?: [number, number, number, number] | null
+	): Mesh;
 
     destroy(): void;
 }
