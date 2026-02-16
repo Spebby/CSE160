@@ -1,12 +1,13 @@
 /// <reference types="stats.js" />
 
-import Shape, { Plane, Cube, Mesh, MaterialProperties } from '../../assets/lib/shapes.js';
+import Shape, { Plane, Cube, Prism, Mesh, MaterialProperties } from '../../assets/lib/shapes.js';
 import Transform from '../../assets/lib/transform.js';
 import Camera, { CameraMode } from '../../assets/lib/camera.js';
 import Anteater from './anteater.js';
 import LoadOBJ from './objloader.js';
 import GameGrid from './gamegrid.js';
 import MushroomMan from './mushroomman.js';
+import Tween from './tween.js';
 
 const WORLD_EDGE: number = 128.0;
 
@@ -110,7 +111,6 @@ let GL: WebGLRenderingContext;
 let W: number, H: number, HW: number, HH: number;
 let START_TIME = performance.now() / 1000.0;
 let CAMERA: Camera;
-let ANTEATER: Anteater;
 let DEBUG: boolean;
 let stats = new Stats();
 stats.dom.style.left = "auto";
@@ -121,8 +121,11 @@ document.body.appendChild(stats.dom);
 let treeMesh: Mesh;
 let treeFoliage: Mesh;
 let meshes: Shape[] = [];
-const GRID = new GameGrid(2.0);
+let anteaters: Anteater[] = [];
+const GRID = new GameGrid(4.0);
 let MUSH_MAN: MushroomMan;
+const TWEENS: Tween[] = [];
+let ANTEATER_ANIMS: any;
 
 async function main(): Promise<void> {
 	setupWebGL();
@@ -133,14 +136,14 @@ async function main(): Promise<void> {
 	const treeFoliagePromise = LoadOBJ('./models/maple_foliage.obj', './models/maple_foliage.png', treeRoot);
 	const animPromise = fetch('../../assets/data/animation.json').then(r => r.json());
 	const mushroomsPromise = initMushrooms();
-	
+
 	// get sync over with
 	setupListeners();
 	GL.clearColor(...skyColor, 1.0);
 	GL.clear(GL.COLOR_BUFFER_BIT | GL.DEPTH_BUFFER_BIT);
 	resizeCanvas();
 	
-	const cameraTransform = new Transform([0, 2, -5], [0, 0, 0], [1, 1, 1]);
+	const cameraTransform = new Transform([0, 2, -8], [0, 0, 0], [1, 1, 1]);
 	CAMERA = new Camera(cameraTransform, null, CameraMode.FP);
 	CAMERA.distance = 6;
 	CAMERA.moveSpeed = 10;
@@ -164,7 +167,8 @@ async function main(): Promise<void> {
 		mushroomsPromise
 	]);
 	GL.finish();
-	
+
+	ANTEATER_ANIMS = animations;
 	treeMesh = loadedTreeMesh;
 	treeFoliage = loadedTreeFoliage;
 	treeFoliage.alphaCutout = 0.6;
@@ -179,13 +183,8 @@ async function main(): Promise<void> {
 		blendSrc: GL.ONE,
 		blendDst: GL.ZERO
 	});
-	
-	ANTEATER = new Anteater(new Transform([5,0,0], [0,-180,0], [0.5,0.5,0.5]), animations);
-	ANTEATER.setMaxRoamDistance(64);
-	ANTEATER.setMoveSpeed(3.0);
-	ANTEATER.setWanderTiming(3.0, 0.8)
-	CAMERA.target = ANTEATER.cameraFocus;
 
+	spawnAnteater(5, 0);
 	GRID.block( 0,  0);
 	GRID.block( 0,  1);
 	GRID.block( 0, -1);
@@ -197,11 +196,11 @@ async function main(): Promise<void> {
 	GRID.block(-1, -1);
 
 	const treePoints = generatePoints({
-		spawnRadius: WORLD_EDGE / 2,
-		centerExclusionRadius: 10,
-		minDistance: 8,
-		targetCount: 24,
-		gridSize: 2,
+		spawnRadius: 32,
+		centerExclusionRadius: 5,
+		minDistance: 2,
+		targetCount: 32,
+		gridSize: 1,
 	});
 
 	for (const [x, z] of treePoints) {
@@ -250,7 +249,7 @@ async function initMushrooms(): Promise<void> {
 	mushroomMeshes[0].alphaCutout = 0.5;
 
 	MUSH_MAN = new MushroomMan(mushroomMeshes, GRID);
-	MUSH_MAN.placeMushroom(0, -3);
+	MUSH_MAN.placeMushroom(0, -5);
 
 
 	const mushroomPoints = generatePoints({
@@ -267,6 +266,35 @@ async function initMushrooms(): Promise<void> {
 	}
 
 	console.log(`Placed ${placed} mushrooms (target: 32)`);
+}
+
+function spawnAnteater(x: number, z: number): Anteater {
+	const worldY = 0;
+	const rotation = Math.random() * 360;
+	const targetScale = 0.5;
+	
+	const transform = new Transform(
+		[x, worldY, z], 
+		[0, rotation, 0], 
+		[0, 0, 0]
+	);
+	
+	const anteater = new Anteater(transform, ANTEATER_ANIMS);
+	anteater.setMaxRoamDistance(64);
+	anteater.setMoveSpeed(3.0);
+	anteater.setWanderTiming(3.0, 0.8);
+
+	let finScale = 0.4 + (Math.random() * 0.2);
+	TWEENS.push(new Tween(
+		transform, 
+		'scale', 
+		[0, 0, 0], 
+		[finScale, finScale, finScale], 
+		3.0
+	));
+	
+	anteaters.push(anteater);
+	return anteater;
 }
 
 function setupWebGL(): void {
@@ -293,6 +321,8 @@ function setupWebGL(): void {
 	window.addEventListener('resize', resizeCanvas);
 }
 
+let credits: number = 0;
+let anteater_cost = 20;
 function setupListeners(): void {
 	window.addEventListener('keydown', function(env) {
 		CAMERA.keyStates[env.key.toLowerCase()] = true;
@@ -303,6 +333,23 @@ function setupListeners(): void {
 			if (document.pointerLockElement === canvas) {
 				document.exitPointerLock();
 			}
+		}
+
+		const [worldX, , worldZ] = CAMERA.transform.getWorldPosition();
+		const [x, z] = GRID.worldToGrid(worldX, worldZ);
+		if (env.key === 'z') {
+			// if in range of altar
+			if (Math.abs(x) < 3 && Math.abs(z) < 3) {
+				if (anteater_cost < credits) {
+					credits -= anteater_cost;
+					spawnAnteater(0, 0);
+				}
+			} else { // plant mushroom instead
+				// mush man should handle case of growing a mushroom if already there
+				MUSH_MAN.placeMushroom(worldX, worldZ);
+			}
+		} else if (env.key === 'x') {
+			credits += MUSH_MAN.pickMushroom(worldX, worldZ);
 		}
 	});
 	
@@ -449,31 +496,69 @@ function tick(): void {
 	const viewMatrix = CAMERA.getViewMatrix();
 	GL.uniformMatrix4fv(window.u_GlobalRotation, false, viewMatrix.elements);
 
+	MUSH_MAN.update(dt);
 	dispatchAnimations(dt);
 	renderAllShapes(dt);
 
-	MUSH_MAN.update(dt);
 	stats.end();
 	requestAnimationFrame(tick);
-
-	if (DEBUG) {
-		//
-	}
 }
 
 function dispatchAnimations(dt: number): void {
-	ANTEATER.update(dt);
+	updateTweens(dt);
+	for (const anteater of anteaters) {
+		anteater.update(dt);
+	}
 }
 
+function updateTweens(dt: number) {
+	for (let i = TWEENS.length - 1; i >= 0; i--) {
+		if (TWEENS[i].update(dt)) {
+			TWEENS.splice(i, 1);
+		}
+	}
+}
+
+let altarSpinTime: number = 0.0;
 function renderAllShapes(dt: number): void {
 	GL.clear(GL.COLOR_BUFFER_BIT | GL.DEPTH_BUFFER_BIT);
 	
-	ANTEATER.render();
+	for (const anteater of anteaters) {
+		anteater.render();
+	}
 	MUSH_MAN.render();
 
 	for (const mesh of meshes) {
 		mesh.render();
 	}
+
+
+	// this is bad to create these here but I really don't care that much about 3 meshes being created each frame that are batched.
+	// the anteaters are the bigger bottleneck anyway
+	altarSpinTime += dt;
+	let base = new Cube(new Transform([0, 0, 0], [0,0,0], [5, 1, 5]), [1.0, 0.84, 0, 1.0], 0.0, null, {
+		shininess: 32.0,
+		specularStrength: 0.5
+	});
+	let platform = new Plane(new Transform([0, 0.505, 0], [0, 0, 0], [5 * 0.95, 1, 5 * 0.955]), [0.7, 0.7, 0.7, 1.0], 0.0, null, {
+		shininess: 32.0,
+		specularStrength: 0.25
+	});
+
+	const bobAmount = 0.15;
+	const bobSpeed = 0.25;
+	const yOffset = 3 + Math.sin(altarSpinTime * bobSpeed * Math.PI * 2) * bobAmount;
+	
+	const rotationSpeed = 20; // degrees per second
+	const yRotation = (altarSpinTime * rotationSpeed) % 360;
+	let bigPrism = new Prism(new Transform([0, yOffset, 0], [0, yRotation, 0], [1.5, 2, 1.5]), [1.0, 0.84, 0, 1.0], 0.0, null, {
+		shininess: 32.0,
+		specularStrength: 0.5
+	});
+
+	base.render();
+	platform.render();
+	bigPrism.render();
 }
 
 function resizeCanvas(): void {

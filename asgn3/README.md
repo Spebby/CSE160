@@ -1,10 +1,9 @@
 # Assignment 3
 
-Stuff
-
-## Sources
-
-None yet
+This is the "Blocky World" project! It takes a lot of what we've built before
+and goes further. The bulk of time spent on this was spent refactoring
+assignment 2's work to be reusable. This took quite a bit of work as priorities
+changed, as I wasn't really sure what I wanted to do until quite late.
 
 ## Gen AI Acknowledgment
 

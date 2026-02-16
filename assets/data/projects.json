@@ -17,12 +17,12 @@
 		{
 			"title": "Blocky World",
 			"description": "A 3D animation of a lowpoly block animal, a giant anteater, using WebGL.",
-			"image": "./assets/images/animal.png",
+			"image": "./assets/images/world.png",
 			"tags": [],
 			"link": "./asgn3"
 		},
 		{
-			"title": "Block Animal",
+			"title": "Blocky Animal",
 			"description": "A 3D animation of a lowpoly block animal, a giant anteater, using WebGL.",
 			"image": "./assets/images/animal.png",
 			"tags": [],

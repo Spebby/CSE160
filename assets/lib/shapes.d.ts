@@ -114,6 +114,11 @@ export declare class Ramp extends Cube {
     static vertexOffset: number;
 }
 
+export declare class Prism extends Cube {
+    static vertexOffset: number;
+	static vertexCount: 24;
+}
+
 export declare class Cylinder extends Shape {
     static vertexData: number[];
     static vertexCount: number;
