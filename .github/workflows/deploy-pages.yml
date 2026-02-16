@@ -25,39 +25,42 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
+      - name: Download TypeScript artifacts
+        uses: dawidd6/action-download-artifact@v9
         with:
-          node-version: "20"
+          workflow: build-typescript.yml
+          workflow_conclusion: success
+          name: '.*-compiled'
+          name_is_regexp: true
+          path: typescript-artifacts
+          branch: ${{ github.ref_name }}
+          # Get artifacts from the most recent successful build
+        continue-on-error: true
 
-      - name: Build TypeScript pages
+      - name: Restore compiled TypeScript to project structure
         run: |
-          echo "Building TypeScript pages..."
-          for page in asgn3 asgn4 asgn5; do
-            if [ -d "$page" ] && [ -f "$page/package.json" ]; then
-              echo "Building $page..."
-              cd "$page"
-              npm install
-              npm run build
-              
-              # Verify build succeeded
-              if [ -d "dist" ]; then
-                echo "✓ $page compiled successfully"
-                ls -la dist/
+          echo "Restoring compiled TypeScript artifacts..."
+          if [ -d "typescript-artifacts" ]; then
+            for page in asgn3 asgn4 asgn5; do
+              if [ -d "typescript-artifacts/${page}-compiled" ]; then
+                echo "Restoring $page..."
+                mkdir -p "$page/dist"
+                cp -r typescript-artifacts/${page}-compiled/* "$page/dist/"
+                echo "✓ $page restored successfully"
+                ls -la "$page/dist/"
               else
-                echo "✗ $page build failed - no dist/ directory"
-                exit 1
+                echo "⊘ $page artifacts not found, skipping"
               fi
-              cd ..
-            else
-              echo "⊘ $page does not exist yet, skipping"
-            fi
-          done
+            done
+          else
+            echo "No TypeScript artifacts found - they may not have been built yet"
+            echo "This is expected for manual triggers or first-time deployments"
+          fi
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: "3.1"
+          ruby-version: "3.2"
           bundler-cache: false
 
       - name: Setup Pages
