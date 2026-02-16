@@ -134,7 +134,7 @@ async function main(): Promise<void> {
 	const treeRoot = new Transform();
 	const treeMeshPromise = LoadOBJ('./models/maple.obj', './models/maple.png', treeRoot);
 	const treeFoliagePromise = LoadOBJ('./models/maple_foliage.obj', './models/maple_foliage.png', treeRoot);
-	const animPromise = fetch('../../assets/data/animation.json').then(r => r.json());
+	const animPromise = fetch('../assets/data/animation.json').then(r => r.json()); // Reminder: from perspective of index.html since runtime
 	const mushroomsPromise = initMushrooms();
 
 	// get sync over with
