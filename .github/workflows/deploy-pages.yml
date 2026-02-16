@@ -1,4 +1,4 @@
-name: Deploy Jekyll site with TypeScript to Pages
+name: Deploy Jekyll site
 
 on:
   push:
@@ -30,7 +30,7 @@ jobs:
         with:
           workflow: build-typescript.yml
           workflow_conclusion: success
-          name: '.*-compiled'
+          name: ".*-compiled"
           name_is_regexp: true
           path: typescript-artifacts
           branch: ${{ github.ref_name }}
