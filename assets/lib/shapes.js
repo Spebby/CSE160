@@ -382,7 +382,9 @@ export default class Shape {
 			GL.enableVertexAttribArray(window.a_TexCoord);
 		} else {
 			GL.uniform1i(window.u_UseTexture, 0);
-			GL.disableVertexAttribArray(window.a_TexCoord);
+			if (window.a_TexCoord >= 0) { // assignment 2 patch
+				GL.disableVertexAttribArray(window.a_TexCoord);
+			}
 		}
 		
 		GL.drawArrays(GL.TRIANGLES, vertexOffset, vertexCount);

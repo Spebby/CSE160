@@ -266,7 +266,6 @@ function connectVariablesToGLSL() {
 		return;
 	}
 
-	// Get vars we want & store them
 	let tPos = GL.getAttribLocation(GL.program, 'a_Position');
 	if (tPos < 0) {
 		console.log('Failed to get storage location of a_Position');
@@ -307,13 +306,22 @@ function connectVariablesToGLSL() {
 	globalRotation.setIdentity();
 	GL.uniformMatrix4fv(window.u_GlobalRotation, false, globalRotation.elements);
 
-
 	let tProj = GL.getUniformLocation(GL.program, 'u_ProjectionMatrix');
 	if (!tProj) {
 		console.log('Failed to get storage location of u_ProjectionMatrix');
 		return;
 	}
 	window.u_ProjectionMatrix = tProj;
+	
+	// Get other uniforms if they exist
+	window.u_Shininess = GL.getUniformLocation(GL.program, 'u_Shininess');
+	window.u_SpecularStrength = GL.getUniformLocation(GL.program, 'u_SpecularStrength');
+	window.u_RimStrength = GL.getUniformLocation(GL.program, 'u_RimStrength');
+	window.u_UVScale = GL.getUniformLocation(GL.program, 'u_UVScale');
+	window.u_AlphaCutout = GL.getUniformLocation(GL.program, 'u_AlphaCutout');
+	window.u_Sampler = GL.getUniformLocation(GL.program, 'u_Sampler');
+	window.u_UseTexture = GL.getUniformLocation(GL.program, 'u_UseTexture');
+	window.a_TexCoord = GL.getAttribLocation(GL.program, 'a_TexCoord');
 }
 
 function tick() {
