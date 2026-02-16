@@ -4,6 +4,7 @@ on:
   push:
     branches: [main, master, develop]
     paths:
+      - "assets/lib/**"
       - "asgn3/**"
       - "asgn4/**"
       - "asgn5/**"
@@ -11,10 +12,12 @@ on:
   pull_request:
     branches: [main, master, develop]
     paths:
+      - "assets/lib/**"
       - "asgn3/**"
       - "asgn4/**"
       - "asgn5/**"
       - ".github/workflows/build-typescript.yml"
+      - "scripts/**"
 
 jobs:
   build:
