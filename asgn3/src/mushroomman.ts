@@ -33,7 +33,7 @@ export default class MushroomMan {
 		// place mushroom
 		const [centerX, centerZ] = this.grid.gridToWorld(gridX, gridZ);
 		const template = this.meshTemplates[Math.floor(Math.random() * this.meshTemplates.length)];
-		const transform = new Transform([centerX, 0, centerZ]);
+		const transform = new Transform([centerX, 0, centerZ]); // I considered making it worldX/Z, but it became too confusing trying to grow one if you happened to place it at the edge of a cell.
 		const mushroom = new Mushroom(gridX, gridZ, transform, template);
 		
 		this.mushrooms.push(mushroom);

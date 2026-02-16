@@ -150,12 +150,18 @@ async function main(): Promise<void> {
 	DEBUG = false;
 	
 	// Init world
-	let ground = new Plane(new Transform([0,0,0], [0,0,0], [256, 1, 256]), [117 / 255, 167 / 255, 67 / 255, 1.0], 0.0, './noise.png', {
+	let ground = new Plane(new Transform([0,0,0], [0,0,0], [WORLD_EDGE * 3, 1, WORLD_EDGE * 3]), [117 / 255, 167 / 255, 67 / 255, 1.0], 0.0, './noise.png', {
 		shininess: 0.0, 
 		specularStrength: 0.0, 
 		rimStrength: 0.0,
 		UVScale: [4.0, 4.0],
 	});
+	let skyBox = new Cube(new Transform([0,0,0],[0,0,0],[-WORLD_EDGE * 3, -WORLD_EDGE * 3, -WORLD_EDGE * 3]), [...skyColor, 1.0], 0.0, null, {
+		shininess: 0,
+		specularStrength: 0,
+		rimStrength: 0
+	});
+	meshes.push(skyBox);
 	meshes.push(ground);
 	
 	
@@ -531,7 +537,6 @@ function renderAllShapes(dt: number): void {
 	for (const mesh of meshes) {
 		mesh.render();
 	}
-
 
 	// this is bad to create these here but I really don't care that much about 3 meshes being created each frame that are batched.
 	// the anteaters are the bigger bottleneck anyway
