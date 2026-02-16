@@ -8,6 +8,8 @@ import LoadOBJ from './objloader.js';
 import GameGrid from './gamegrid.js';
 import MushroomMan from './mushroomman.js';
 
+const WORLD_EDGE: number = 128.0;
+
 // Vertex shader program
 const VSHADER_SOURCE = `
 	attribute vec4 a_Position;
@@ -161,6 +163,7 @@ async function main(): Promise<void> {
 		animPromise,
 		mushroomsPromise
 	]);
+	GL.finish();
 	
 	treeMesh = loadedTreeMesh;
 	treeFoliage = loadedTreeFoliage;
@@ -170,7 +173,12 @@ async function main(): Promise<void> {
 		specularStrength: 0.0, 
 		rimStrength: 0.0 
 	});
-	treeFoliage.setGLState({ cullFace: false, blend: false });
+	treeFoliage.setGLState({
+		cullFace: false,
+		blend: false,
+		blendSrc: GL.ONE,
+		blendDst: GL.ZERO
+	});
 	
 	ANTEATER = new Anteater(new Transform([5,0,0], [0,-180,0], [0.5,0.5,0.5]), animations);
 	ANTEATER.setMaxRoamDistance(64);
@@ -178,7 +186,6 @@ async function main(): Promise<void> {
 	ANTEATER.setWanderTiming(3.0, 0.8)
 	CAMERA.target = ANTEATER.cameraFocus;
 
-	placeTree(0, 0, 1.5);
 	GRID.block( 0,  0);
 	GRID.block( 0,  1);
 	GRID.block( 0, -1);
@@ -190,7 +197,7 @@ async function main(): Promise<void> {
 	GRID.block(-1, -1);
 
 	const treePoints = generatePoints({
-		spawnRadius: 128,
+		spawnRadius: WORLD_EDGE / 2,
 		centerExclusionRadius: 10,
 		minDistance: 8,
 		targetCount: 24,
@@ -230,13 +237,16 @@ async function initMushrooms(): Promise<void> {
     ];
 
     const mushroomMeshes = await Promise.all(
-        paths.map(name =>
-            LoadOBJ(`./models/${name}.obj`, './models/mushroom.png')
-        )
+        paths.map(name => LoadOBJ(`./models/${name}.obj`, './models/mushroom.png'))
     );
 
 	// morel is only one that needs transparency
-    mushroomMeshes[0].setGLState({ cullFace: false, blend: false });
+    mushroomMeshes[0].setGLState({
+		cullFace: false,
+		blend: false,
+		blendSrc: GL.ONE,
+		blendDst: GL.ZERO
+	});
 	mushroomMeshes[0].alphaCutout = 0.5;
 
 	MUSH_MAN = new MushroomMan(mushroomMeshes, GRID);
@@ -275,10 +285,8 @@ function setupWebGL(): void {
 	GL.enable(GL.CULL_FACE);
 	GL.cullFace(GL.BACK);
 	GL.enable(GL.DEPTH_TEST);
-	//GL.enable(GL.BLEND);
+	GL.enable(GL.BLEND);
 	//GL.blendFunc(GL.SRC_ALPHA, GL.ONE_MINUS_SRC_ALPHA);
-
-	GL.disable(GL.BLEND);
 	GL.enable(GL.SAMPLE_ALPHA_TO_COVERAGE);
 
 	window.GL = GL;
@@ -288,8 +296,13 @@ function setupWebGL(): void {
 function setupListeners(): void {
 	window.addEventListener('keydown', function(env) {
 		CAMERA.keyStates[env.key.toLowerCase()] = true;
+		
 		if (env.key === 'Escape') {
 			CAMERA.isDragging = false;
+			// Exit pointer lock
+			if (document.pointerLockElement === canvas) {
+				document.exitPointerLock();
+			}
 		}
 	});
 	
@@ -298,40 +311,58 @@ function setupListeners(): void {
 	});
 
 	canvas.addEventListener('mousedown', function(env) {
+		canvas.focus();
+		
+		// Request pointer lock if not already locked
+		if (!document.pointerLockElement) {
+			canvas.requestPointerLock();
+		}
+		
 		CAMERA.isDragging = true;
 		CAMERA.lastMouseX = env.clientX;
 		CAMERA.lastMouseY = env.clientY;
-
-
-		if (env.shiftKey) {
-			// idk what to do with this but maybe something
-		}
-
-		// place blocks n' stuff
-		// raycast for block placement
-		
 	});
 
+	document.addEventListener('pointerlockchange', function() {
+		if (document.pointerLockElement === canvas) {
+			CAMERA.isDragging = true;
+		} else {
+			CAMERA.isDragging = false;
+		}
+	});
 
-	canvas.addEventListener('mouseleave', function(env) { CAMERA.isDragging = false; });
+	canvas.addEventListener('mouseleave', function(env) { 
+		if (!document.pointerLockElement) {
+			CAMERA.isDragging = false;
+		}
+	});
 
 	canvas.addEventListener('mousemove', function(env) {
 		if (!CAMERA.isDragging) return;
-		const deltaX = env.clientX - CAMERA.lastMouseX;
-		const deltaY = env.clientY - CAMERA.lastMouseY;
 		
-		CAMERA.handleMouseDrag(deltaX, deltaY);
-		CAMERA.lastMouseX = env.clientX;
-		CAMERA.lastMouseY = env.clientY;
+		// Use movementX/Y when pointer locked
+		if (document.pointerLockElement === canvas) {
+			CAMERA.handleMouseDrag(env.movementX, env.movementY);
+		} else {
+			// Fallback to delta calculation
+			const deltaX = env.clientX - CAMERA.lastMouseX;
+			const deltaY = env.clientY - CAMERA.lastMouseY;
+			CAMERA.handleMouseDrag(deltaX, deltaY);
+			CAMERA.lastMouseX = env.clientX;
+			CAMERA.lastMouseY = env.clientY;
+		}
 	});
 
+	// Exit pointer lock on mouse wheel
 	canvas.addEventListener('wheel', function(env) {
-		
+		if (document.pointerLockElement === canvas) {
+			document.exitPointerLock();
+		}
 	});
 
-    canvas.addEventListener('contextmenu', function(env) {
-        env.preventDefault();
-    });
+	canvas.addEventListener('contextmenu', function(env) {
+		env.preventDefault();
+	});
 }
 
 function connectVariablesToGLSL(): void {
@@ -396,7 +427,7 @@ function connectVariablesToGLSL(): void {
 	u_FogStart = getUniform('u_FogStart')!;
 	GL.uniform1f(u_FogStart, 64.0);
 	u_FogEnd = getUniform('u_FogEnd')!;
-	GL.uniform1f(u_FogEnd, 128.0);
+	GL.uniform1f(u_FogEnd, WORLD_EDGE);
 }
 
 let u_FogColor: WebGLUniformLocation;
@@ -462,7 +493,7 @@ function resizeCanvas(): void {
 function updateProjMatrix(): void {
 	const projMatrix = new Matrix4();
 	const aspect = W / H;
-	projMatrix.setPerspective(70, aspect, 0.05, 128);
+	projMatrix.setPerspective(70, aspect, 0.05, WORLD_EDGE);
 	GL.uniformMatrix4fv(window.u_ProjectionMatrix, false, projMatrix.elements);
 }
 

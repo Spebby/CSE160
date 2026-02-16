@@ -78,10 +78,9 @@ function makeUnitCylinderUV(radialSegments = 8) {
 	const uvs = [];
 	const capRadius = 0.24;
 
-	const offset = -0.25;  // This matches Blender
+	const offset = -0.25;  // matches blender default unwrap behaviour
 	
 	for (let i = 0; i < radialSegments; i++) {
-		// No modulo - UVs will range from 1.25 to 0.25
 		const u0 = 1.0 - (i / radialSegments) + offset;
 		const u1 = 1.0 - ((i + 1) / radialSegments) + offset;
 		
@@ -100,7 +99,7 @@ function makeUnitCylinderUV(radialSegments = 8) {
 
 
 	
-	// Bottom cap - RIGHT circle
+	// bottom cap
 	for (let i = 0; i < radialSegments; i++) {
 		const theta0 = (i / radialSegments) * Math.PI * 2;
 		const theta1 = ((i + 1) / radialSegments) * Math.PI * 2;
@@ -117,7 +116,7 @@ function makeUnitCylinderUV(radialSegments = 8) {
 		);
 	}
 	
-	// Top cap - LEFT circle
+	// top cap
 	for (let i = 0; i < radialSegments; i++) {
 		const theta0 = (i / radialSegments) * Math.PI * 2;
 		const theta1 = ((i + 1) / radialSegments) * Math.PI * 2;
@@ -210,7 +209,6 @@ uvArray.push(...makeUnitCylinderUV(16));
 
 const normalArray = generateNormals(shapeArray);
 
-// shape interface
 export default class Shape {
 	static vBuffer = null;
 	static vertexData = null;
@@ -225,16 +223,7 @@ export default class Shape {
 
 	alphaCutout = 0.0;
 
-	// global state tracking for overrides
-	static glState = {
-		cullFace: true,
-		cullFaceMode: window.GL?.BACK,
-		depthTest: true,
-		depthMask: true,
-		blend: true,
-		blendSrc: window.GL?.SRC_ALPHA,
-		blendDst: window.GL?.ONE_MINUS_SRC_ALPHA,
-	};
+	static glState = null;
 
 	static initSharedBuffer() {
 		if (this.vBuffer) return;
@@ -258,7 +247,6 @@ export default class Shape {
 			GL.STATIC_DRAW
 		);
 
-		// UV coordinates (if available)
 		if (this.uvData) {
 			this.uvBuffer = GL.createBuffer();
 			GL.bindBuffer(GL.ARRAY_BUFFER, this.uvBuffer);
@@ -283,11 +271,23 @@ export default class Shape {
 			this.transform = new Transform();
 		}
 		this.tint = tint;
-		this.texture = null;
-		this.textureLoaded = false;
 		this.alphaCutout = clipAlpha;
-	
-		// Per-instance GL state overrides (null = use current state)
+
+		// Lazy init
+		if (Shape.glState === null) {		
+			const GL = window.GL;
+			Shape.glState = {
+				cullFace: true,
+				cullFaceMode: GL.BACK,
+				depthTest: true,
+				depthMask: true,
+				blend: true,
+				blendSrc: GL.SRC_ALPHA,
+				blendDst: GL.ONE_MINUS_SRC_ALPHA,
+			};
+		};
+
+		// per-instance GL state overrides (null = use current state)
 		this.glStateOverrides = {
 			cullFace: null,
 			cullFaceMode: null,
@@ -305,9 +305,12 @@ export default class Shape {
 		this.setMaterial(material);
 
 		this.constructor.initSharedBuffer();
-		
+
+		this.texturePath = texturePath;
 		if (texturePath) {
-			this.loadTexture(texturePath);
+			this.texturePromise = TEXTURE_CACHE.load(texturePath);
+		} else {
+			this.texturePromise = Promise.resolve();
 		}
 	}
 
@@ -325,58 +328,6 @@ export default class Shape {
 		return this;
 	}
 
-	/**
-	 * Load a texture from an image file
-	 * @param {string} path - Path to image file
-	 */
-	loadTexture(path) {
-		const GL = window.GL;
-		this.texture = GL.createTexture();
-		
-		// Create a 1x1 placeholder pixel until image loads
-		GL.bindTexture(GL.TEXTURE_2D, this.texture);
-		GL.texImage2D(
-			GL.TEXTURE_2D,
-			0,
-			GL.RGBA,
-			1, 1, 0,
-			GL.RGBA,
-			GL.UNSIGNED_BYTE,
-			new Uint8Array([255, 0, 255, 255]) // Magenta placeholder
-		);
-		
-		const image = new Image();
-		image.onload = () => {
-			GL.bindTexture(GL.TEXTURE_2D, this.texture);
-			GL.texImage2D(
-				GL.TEXTURE_2D,
-				0,
-				GL.RGBA,
-				GL.RGBA,
-				GL.UNSIGNED_BYTE,
-				image
-			);
-			
-			if (this.isPowerOf2(image.width) && this.isPowerOf2(image.height)) {
-				GL.generateMipmap(GL.TEXTURE_2D);
-			} else {
-				GL.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_WRAP_S, GL.CLAMP_TO_EDGE);
-				GL.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_WRAP_T, GL.CLAMP_TO_EDGE);
-				GL.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_MIN_FILTER, GL.LINEAR);
-			}
-			
-			this.textureLoaded = true;
-		};
-		image.onerror = () => {
-			console.error(`Failed to load texture: ${path}`);
-		};
-		image.src = path;
-	}
-
-	isPowerOf2(value) {
-		return (value & (value - 1)) === 0;
-	}
-
 	render() {
 		const prevState = this._applyGLState();
 		this.setTint();
@@ -388,7 +339,7 @@ export default class Shape {
 		GL.uniform1f(window.u_RimStrength, this.rimStrength);
 		GL.uniform2f(window.u_UVScale, ...this.UVScale);
 		
-		// Use instance properties if they exist (Mesh), otherwise use static (Cube, etc.)
+		// use instance properties if they exist (Mesh), otherwise use static (Cube, etc.)
 		const vBuffer = this.vBuffer ?? C.vBuffer;
 		const nBuffer = this.nBuffer ?? C.nBuffer;
 		const uvBuffer = this.uvBuffer ?? C.uvBuffer;
@@ -412,10 +363,12 @@ export default class Shape {
 		GL.enableVertexAttribArray(window.a_Normal);
 		
 		// Bind texture if available
-		GL.uniform1i(window.u_AlphaCutout, this.alphaCutout);
-		if (this.texture && this.textureLoaded && uvBuffer) {
+		const texture = this.texturePath ? TEXTURE_CACHE.get(this.texturePath) : null;
+		const textureLoaded = this.texturePath ? TEXTURE_CACHE.isLoaded(this.texturePath) : false;
+		GL.uniform1f(window.u_AlphaCutout, this.alphaCutout);
+		if (texture && textureLoaded && uvBuffer) {
 			GL.activeTexture(GL.TEXTURE0);
-			GL.bindTexture(GL.TEXTURE_2D, this.texture);
+			GL.bindTexture(GL.TEXTURE_2D, texture);
 			GL.uniform1i(window.u_Sampler, 0);
 			GL.uniform1i(window.u_UseTexture, 1);
 			
@@ -424,6 +377,7 @@ export default class Shape {
 			GL.enableVertexAttribArray(window.a_TexCoord);
 		} else {
 			GL.uniform1i(window.u_UseTexture, 0);
+			GL.disableVertexAttribArray(window.a_TexCoord);
 		}
 		
 		GL.drawArrays(GL.TRIANGLES, vertexOffset, vertexCount);
@@ -535,7 +489,8 @@ export default class Shape {
 		clone.shininess = this.shininess;
 		clone.specularStrength = this.specularStrength;
 		clone.rimStrength = this.rimStrength;
-		clone.UVScale = this.UVScale;
+		clone.UVScale = this.UVScale.slice();
+		clone.alphaCutout = this.alphaCutout;
 		clone.isClone = true;
 		
 		// share buffers
@@ -544,10 +499,9 @@ export default class Shape {
 		clone.uvBuffer = this.uvBuffer;
 		clone.vertexCount = this.vertexCount;
 		clone.vertexOffset = this.vertexOffset || 0;
-		clone.texture = this.texture;
-		clone.textureLoaded = this.textureLoaded;
-		clone.glStateOverrides = this.glStateOverrides;
-		
+		clone.texturePath = this.texturePath;
+		clone.glStateOverrides = { ...this.glStateOverrides };
+	
 		return clone;
 	}
 
@@ -559,7 +513,6 @@ export default class Shape {
 		if (this.vBuffer)  GL.deleteBuffer(this.vBuffer);
 		if (this.nBuffer)  GL.deleteBuffer(this.nBuffer);
 		if (this.uvBuffer) GL.deleteBuffer(this.uvBuffer);
-		if (this.texture)  GL.deleteTexture(this.texture);
 	}
 }
 
@@ -651,3 +604,69 @@ export class Mesh extends Shape {
 		}
 	}
 }
+
+
+// Needed for reducing memory
+export class TextureCache {
+	constructor() {
+		this.cache = new Map();
+	}
+	
+	load(path) {
+		if (this.cache.has(path)) {
+			return this.cache.get(path).promise;
+		}
+		
+		const GL = window.GL;
+		const texture = GL.createTexture();
+		
+		// Placeholder
+		GL.bindTexture(GL.TEXTURE_2D, texture);
+		GL.texImage2D(GL.TEXTURE_2D, 0, GL.RGBA, 1, 1, 0, GL.RGBA, 
+			GL.UNSIGNED_BYTE, new Uint8Array([255, 0, 255, 255]));
+		
+		const entry = {
+			texture,
+			loaded: false,
+			promise: null
+		};
+		
+		const promise = new Promise((resolve, reject) => {
+			const image = new Image();
+			image.onload = () => {
+				GL.bindTexture(GL.TEXTURE_2D, texture);
+				GL.texImage2D(GL.TEXTURE_2D, 0, GL.RGBA, GL.RGBA, GL.UNSIGNED_BYTE, image);
+				
+				if (this.isPowerOf2(image.width) && this.isPowerOf2(image.height)) {
+					GL.generateMipmap(GL.TEXTURE_2D);
+				} else {
+					GL.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_WRAP_S, GL.CLAMP_TO_EDGE);
+					GL.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_WRAP_T, GL.CLAMP_TO_EDGE);
+					GL.texParameteri(GL.TEXTURE_2D, GL.TEXTURE_MIN_FILTER, GL.LINEAR);
+				}
+				entry.loaded = true;
+				resolve(texture);
+			};
+			image.onerror = () => reject(new Error(`Failed to load: ${path}`));
+			image.src = path;
+		});
+		
+		entry.promise = promise;
+		this.cache.set(path, entry);
+		return promise;
+	}
+	
+	get(path) {
+		return this.cache.get(path)?.texture || null;
+	}
+	
+	isLoaded(path) {
+		return this.cache.get(path)?.loaded || false;
+	}
+	
+	isPowerOf2(value) {
+		return (value & (value - 1)) === 0;
+	}
+}
+
+export const TEXTURE_CACHE = new TextureCache();

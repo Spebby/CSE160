@@ -74,7 +74,7 @@ export default async function LoadOBJ(filepath: string, albedoPath?: string | nu
 	console.log(`Generated ${vBuff.length / 3} vertices`);
 	
 	return new Mesh(
-		transform,
+		transform ?? null,
 		[1, 1, 1, 1],
 		0.0,
 		vBuff,
