@@ -1,0 +1,13 @@
+{
+  "name": "asgn3",
+  "version": "1.0.0",
+  "description": "Blocky World",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch"
+  },
+  "devDependencies": {
+    "@types/stats.js": "^0.17.4",
+    "typescript": "^5.3.3"
+  }
+}

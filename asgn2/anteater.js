@@ -1,5 +1,5 @@
-import { Cube, SlantedCube, Ramp, Cylinder } from './shapes.js';
-import Transform from './transform.js'
+import { Cube, SlantedCube, Ramp, Cylinder } from '../assets/lib/shapes.js';
+import Transform from '../assets/lib/transform.js'
 
 const BODY_COLOUR = [77  / 255, 67  / 255, 57  / 255, 1.0].slice();
 const BODY_DARK   = [36  / 255, 35  / 255, 33  / 255, 1.0].slice();

@@ -6,3 +6,38 @@ whitelist:
   - jekyll-redirect-from
 plugins:
   - jekyll-redirect-from
+
+exclude:
+  # Root
+  - scripts/
+  - node_modules/
+  - tsconfig.json
+  - tsconfig.base.json
+  - _config.yml
+  - _typos.toml
+  - flake.nix
+  - flake.lock
+  - Gemfile
+  - Gemfile.lock
+  - package.json
+  - package-lock.json
+  # Asgn1
+  - asgn1/Assignment1_Animation.gif
+  # Asgn3
+  - asgn3/node_modules/
+  #- asgn3/src/
+  - asgn3/package.json
+  - asgn3/package-lock.json
+  - asgn3/tsconfig.json
+  # Asgn4
+  - asgn4/node_modules/
+  #- asgn4/src/
+  - asgn4/package.json
+  - asgn4/package-lock.json
+  - asgn4/tsconfig.json
+  # Asgn5
+  - asgn5/node_modules/
+  #- asgn5/src/
+  - asgn5/package.json
+  - asgn5/package-lock.json
+  - asgn5/tsconfig.json

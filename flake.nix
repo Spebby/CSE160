@@ -52,15 +52,25 @@
         devShells.default = pkgs.mkShell {
           packages = with pkgs; [
             git
+            act
+
+            # Ruby
             ruby_3_3
-            jekyll
-            rubyPackages_3_3.jekyll-redirect-from
-            rubyPackages_3_3.kramdown-parser-gfm
+            bundler
+            nodejs_20
           ];
 
           shellHook = ''
-            		echo "Dev Env loaded."
-            		${self.checks.${system}.pre-commit-check.shellHook}
+            export JEKYLL_ENV="production"
+            bundle install
+            echo "Dev Env loaded."
+            echo ""
+            echo "Build commands:"
+            echo "  npm run build     - Build entire site (TypeScript + Jekyll)"
+            echo "  npm run dev       - Start development server with live reload"
+            echo "  npm run dev:asgn# - Dev mode for specific assignment"
+            echo ""
+            ${self.checks.${system}.pre-commit-check.shellHook}
           '';
         };
       }

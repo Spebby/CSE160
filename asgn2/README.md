@@ -44,4 +44,5 @@ override system and `updateTransitions`. Gen AI was also used to program some
 debug utils like `getHierarchyGraph` and `renderBonesDebug`
 
 I also used it for rubber ducking while working on camera code and to detect
-bugs and errors with my logic. Which took quite awhile.
+bugs and errors with my logic. Which took quite awhile. (As of asgn3, camera
+code has been moved to /asset/lib/)
