@@ -161,7 +161,7 @@ async function main(): Promise<void> {
 		specularStrength: 0,
 		rimStrength: 0
 	});
-	meshes.push(skyBox);
+	//meshes.push(skyBox);
 	meshes.push(ground);
 	
 	
