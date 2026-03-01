@@ -8,9 +8,9 @@
 			"link": "../peristeria"
 		},
 		{
-			"title": "???",
+			"title": "Lighting",
 			"description": "Lighting project. Incomplete.",
-			"image": "",
+			"image": "./assets/images/lighting.png",
 			"tags": [],
 			"link": "./asgn4"
 		},

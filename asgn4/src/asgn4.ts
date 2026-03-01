@@ -1,13 +1,11 @@
 /// <reference types="stats.js" />
 
-import Shape, { Plane, Cube, Prism, Mesh, MaterialProperties } from '../../assets/lib/shapes.js';
+import Shape, { Plane, Cube, Prism, Mesh, Cylinder16, MaterialProperties } from '../../assets/lib/shapes.js';
 import Transform from '../../assets/lib/transform.js';
 import Camera, { CameraMode } from '../../assets/lib/camera.js';
-import Anteater from './anteater.js';
 import LoadOBJ from '../../assets/lib/objloader.js';
-import GameGrid from './gamegrid.js';
-import MushroomMan from './mushroomman.js';
 import Tween from './tween.js';
+import Anteater from './anteater.js';
 
 const WORLD_EDGE: number = 128.0;
 
@@ -122,190 +120,48 @@ stats.dom.style.right = "0";
 stats.showPanel(0);
 document.body.appendChild(stats.dom);
 
-let treeMesh: Mesh;
-let treeFoliage: Mesh;
 let meshes: Shape[] = [];
-let anteaters: Anteater[] = [];
-const GRID = new GameGrid(4.0);
-let MUSH_MAN: MushroomMan;
+let ANTEATER: Anteater;
 const TWEENS: Tween[] = [];
-let ANTEATER_ANIMS: any;
 
 async function main(): Promise<void> {
 	setupWebGL();
 	connectVariablesToGLSL();
-	
-	const treeRoot = new Transform();
-	const treeMeshPromise = LoadOBJ('./models/maple.obj', './models/maple.png', treeRoot);
-	const treeFoliagePromise = LoadOBJ('./models/maple_foliage.obj', './models/maple_foliage.png', treeRoot);
+
+	const ballTransform = new Transform();
+	const ballMeshPromise = LoadOBJ('./ball.obj', './ball.png', ballTransform);
 	const animPromise = fetch('../assets/data/animation.json').then(r => r.json()); // Reminder: from perspective of index.html since runtime
-	const mushroomsPromise = initMushrooms();
 
 	// get sync over with
 	setupListeners();
 	GL.clearColor(...skyColor, 1.0);
 	GL.clear(GL.COLOR_BUFFER_BIT | GL.DEPTH_BUFFER_BIT);
 	resizeCanvas();
-	
+
 	const cameraTransform = new Transform([0, 2, -8], [0, 0, 0], [1, 1, 1]);
-	CAMERA = new Camera(cameraTransform, null, CameraMode.FP);
+	CAMERA = new Camera(cameraTransform, null, CameraMode.ORBIT);
 	CAMERA.distance = 6;
-	CAMERA.moveSpeed = 10;
 	DEBUG = false;
 	
-	// Init world
-	let ground = new Plane(new Transform([0,0,0], [0,0,0], [WORLD_EDGE * 3, 1, WORLD_EDGE * 3]), [117 / 255, 167 / 255, 67 / 255, 1.0], 0.0, './noise.png', {
-		shininess: 0.0, 
-		specularStrength: 0.0, 
-		rimStrength: 0.0,
-		UVScale: [4.0, 4.0],
-	});
-	let skyBox = new Cube(new Transform([0,0,0],[0,0,0],[-WORLD_EDGE * 3, -WORLD_EDGE * 3, -WORLD_EDGE * 3]), [...skyColor, 1.0], 0.0, null, {
-		shininess: 0,
-		specularStrength: 0,
-		rimStrength: 0
-	});
-	//meshes.push(skyBox);
-	meshes.push(ground);
-	
-	
 	// Sync Barrier
-	const [loadedTreeMesh, loadedTreeFoliage, animations] = await Promise.all([
-		treeMeshPromise,
-		treeFoliagePromise,
-		animPromise,
-		mushroomsPromise
+	const [loadedBallMesh, animations] = await Promise.all([
+		ballMeshPromise,
+		animPromise
 	]);
 	GL.finish();
 
-	ANTEATER_ANIMS = animations;
-	treeMesh = loadedTreeMesh;
-	treeFoliage = loadedTreeFoliage;
-	treeFoliage.alphaCutout = 0.6;
-	treeFoliage.setMaterial({ 
-		shininess: 0.0, 
-		specularStrength: 0.0, 
-		rimStrength: 0.0 
-	});
-	treeFoliage.setGLState({
-		cullFace: false,
-		blend: false,
-		blendSrc: GL.ONE,
-		blendDst: GL.ZERO
+	loadedBallMesh.setMaterial({
+		shininess: 32.0,
+		specularStrength: 0.75,
 	});
 
-	spawnAnteater(5, 0);
-	GRID.block( 0,  0);
-	GRID.block( 0,  1);
-	GRID.block( 0, -1);
-	GRID.block( 1,  0);
-	GRID.block( 1,  1);
-	GRID.block( 1, -1);
-	GRID.block(-1,  0);
-	GRID.block(-1,  1);
-	GRID.block(-1, -1);
-
-	const treePoints = generatePoints({
-		spawnRadius: 32,
-		centerExclusionRadius: 5,
-		minDistance: 2,
-		targetCount: 32,
-		gridSize: 1,
-	});
-
-	for (const [x, z] of treePoints) {
-		placeTree(x, z);
-	}
-
+	meshes.push(loadedBallMesh);
+	let antTransform = new Transform([0, 2, 0.75], [0, 0, 0], [1, 1, 1], ballTransform);
+	ANTEATER = new Anteater(antTransform, animations);
+	ANTEATER.queueAnim("ball_balance");
 	requestAnimationFrame(tick);
 }
 
-function placeTree(x: number, z: number, scale: number = 1.0): void {
-	GRID.block(x, z)
-	const [worldX, worldZ] = GRID.getRandomPositionInCell(x, z);
-	let point = new Transform([worldX, 0, worldZ], [0, Math.random() * 360, 0], [scale, scale, scale]);
-	meshes.push(treeMesh.clone(point));
-	meshes.push(treeFoliage.clone(point));
-}
-
-async function initMushrooms(): Promise<void> {
-    const paths = [
-        'morel',
-        'black_trumpet',
-        'bolete',
-        'chanterelle',
-        'dapperling',
-        'galerina',
-        'gymnopilus',
-        'jackolantern',
-        'panaeoleus',
-        'parasol',
-        'pluteus',
-        'salt',
-        'silly',
-    ];
-
-    const mushroomMeshes = await Promise.all(
-        paths.map(name => LoadOBJ(`./models/${name}.obj`, './models/mushroom.png'))
-    );
-
-	// morel is only one that needs transparency
-    mushroomMeshes[0].setGLState({
-		cullFace: false,
-		blend: false,
-		blendSrc: GL.ONE,
-		blendDst: GL.ZERO
-	});
-	mushroomMeshes[0].alphaCutout = 0.5;
-
-	MUSH_MAN = new MushroomMan(mushroomMeshes, GRID);
-	MUSH_MAN.placeMushroom(0, -5);
-
-
-	const mushroomPoints = generatePoints({
-		spawnRadius: 96,
-		centerExclusionRadius: 10,
-		minDistance: 5,
-		targetCount: 32,
-	});
-
-	let placed = 0;
-	for (const [x, z] of mushroomPoints) {
-		const mushroom = MUSH_MAN.placeMushroom(x, z);
-		if (mushroom) placed++;
-	}
-
-	console.log(`Placed ${placed} mushrooms (target: 32)`);
-}
-
-function spawnAnteater(x: number, z: number): Anteater {
-	const worldY = 0;
-	const rotation = Math.random() * 360;
-	const targetScale = 0.5;
-	
-	const transform = new Transform(
-		[x, worldY, z], 
-		[0, rotation, 0], 
-		[0, 0, 0]
-	);
-	
-	const anteater = new Anteater(transform, ANTEATER_ANIMS);
-	anteater.setMaxRoamDistance(64);
-	anteater.setMoveSpeed(3.0);
-	anteater.setWanderTiming(3.0, 0.8);
-
-	let finScale = 0.4 + (Math.random() * 0.2);
-	TWEENS.push(new Tween(
-		transform, 
-		'scale', 
-		[0, 0, 0], 
-		[finScale, finScale, finScale], 
-		3.0
-	));
-	
-	anteaters.push(anteater);
-	return anteater;
-}
 
 function setupWebGL(): void {
 	canvas = document.getElementById('webgl') as HTMLCanvasElement;
@@ -343,23 +199,6 @@ function setupListeners(): void {
 			if (document.pointerLockElement === canvas) {
 				document.exitPointerLock();
 			}
-		}
-
-		const [worldX, , worldZ] = CAMERA.transform.getWorldPosition();
-		const [x, z] = GRID.worldToGrid(worldX, worldZ);
-		if (env.key === 'z') {
-			// if in range of altar
-			if (Math.abs(x) < 3 && Math.abs(z) < 3) {
-				if (anteater_cost < credits) {
-					credits -= anteater_cost;
-					spawnAnteater(0, 0);
-				}
-			} else { // plant mushroom instead
-				// mush man should handle case of growing a mushroom if already there
-				MUSH_MAN.placeMushroom(worldX, worldZ);
-			}
-		} else if (env.key === 'x') {
-			credits += MUSH_MAN.pickMushroom(worldX, worldZ);
 		}
 	});
 	
@@ -412,9 +251,10 @@ function setupListeners(): void {
 
 	// Exit pointer lock on mouse wheel
 	canvas.addEventListener('wheel', function(env) {
-		if (document.pointerLockElement === canvas) {
-			document.exitPointerLock();
-		}
+		if (document.pointerLockElement !== canvas) return;
+
+		env.preventDefault();
+		CAMERA.handleMouseWheel(env.deltaY, 50, 0.5);
 	});
 
 	canvas.addEventListener('contextmenu', function(env) {
@@ -506,7 +346,6 @@ function tick(): void {
 	const viewMatrix = CAMERA.getViewMatrix();
 	GL.uniformMatrix4fv(window.u_GlobalRotation, false, viewMatrix.elements);
 
-	MUSH_MAN.update(dt);
 	dispatchAnimations(dt);
 	renderAllShapes(dt);
 
@@ -516,9 +355,7 @@ function tick(): void {
 
 function dispatchAnimations(dt: number): void {
 	updateTweens(dt);
-	for (const anteater of anteaters) {
-		anteater.update(dt);
-	}
+	ANTEATER.update(dt);
 }
 
 function updateTweens(dt: number) {
@@ -532,42 +369,11 @@ function updateTweens(dt: number) {
 let altarSpinTime: number = 0.0;
 function renderAllShapes(dt: number): void {
 	GL.clear(GL.COLOR_BUFFER_BIT | GL.DEPTH_BUFFER_BIT);
-	
-	for (const anteater of anteaters) {
-		anteater.render();
-	}
-	MUSH_MAN.render();
+	ANTEATER.render();
 
 	for (const mesh of meshes) {
 		mesh.render();
 	}
-
-	// this is bad to create these here but I really don't care that much about 3 meshes being created each frame that are batched.
-	// the anteaters are the bigger bottleneck anyway
-	altarSpinTime += dt;
-	let base = new Cube(new Transform([0, 0, 0], [0,0,0], [5, 1, 5]), [1.0, 0.84, 0, 1.0], 0.0, null, {
-		shininess: 32.0,
-		specularStrength: 0.5
-	});
-	let platform = new Plane(new Transform([0, 0.505, 0], [0, 0, 0], [5 * 0.95, 1, 5 * 0.955]), [0.7, 0.7, 0.7, 1.0], 0.0, null, {
-		shininess: 32.0,
-		specularStrength: 0.25
-	});
-
-	const bobAmount = 0.15;
-	const bobSpeed = 0.25;
-	const yOffset = 3 + Math.sin(altarSpinTime * bobSpeed * Math.PI * 2) * bobAmount;
-	
-	const rotationSpeed = 20; // degrees per second
-	const yRotation = (altarSpinTime * rotationSpeed) % 360;
-	let bigPrism = new Prism(new Transform([0, yOffset, 0], [0, yRotation, 0], [1.5, 2, 1.5]), [1.0, 0.84, 0, 1.0], 0.0, null, {
-		shininess: 32.0,
-		specularStrength: 0.5
-	});
-
-	base.render();
-	platform.render();
-	bigPrism.render();
 }
 
 function resizeCanvas(): void {
@@ -593,68 +399,3 @@ function updateProjMatrix(): void {
 
 // Start the application
 main();
-
-
-// Tree & Mushroom placement helpers
-type SamplePoint = [number, number];
-interface PlacementOptions {
-	spawnRadius: number;
-	centerExclusionRadius?: number;
-	minDistance: number;
-	targetCount: number;
-	gridSize?: number;
-}
-
-/**
- * Generate points in an annulus with a minimum distance constraint
- */
-function generatePoints(options: PlacementOptions): SamplePoint[] {
-	const {
-		spawnRadius,
-		centerExclusionRadius = 0,
-		minDistance,
-		targetCount,
-		gridSize,
-	} = options;
-
-	const samples: SamplePoint[] = [];
-	const occupiedGrid = new Set<string>();
-
-	const maxAttempts = targetCount * 10;
-
-	for (let attempt = 0; attempt < maxAttempts && samples.length < targetCount; attempt++) {
-		const angle = Math.random() * Math.PI * 2;
-		const radius = centerExclusionRadius + Math.random() * (spawnRadius - centerExclusionRadius);
-		let x = Math.cos(angle) * radius;
-		let z = Math.sin(angle) * radius;
-
-		// If using a grid, snap point and check occupancy
-		if (gridSize) {
-			const gx = Math.round(x / gridSize);
-			const gz = Math.round(z / gridSize);
-			const key = `${gx},${gz}`;
-			if (occupiedGrid.has(key)) continue;
-
-			occupiedGrid.add(key);
-			x = gx * gridSize;
-			z = gz * gridSize;
-		}
-
-		// Check minimum distance from previous samples
-		let valid = true;
-		for (const [sx, sz] of samples) {
-			const dx = x - sx;
-			const dz = z - sz;
-			if (Math.sqrt(dx * dx + dz * dz) < minDistance) {
-				valid = false;
-				break;
-			}
-		}
-
-		if (valid) {
-			samples.push([x, z]);
-		}
-	}
-
-	return samples;
-}
