@@ -555,12 +555,12 @@ function renderAllShapes(dt: number): void {
 	POINT_MESH.transform.setRot(0, -pointOrbitAngle * (180 / Math.PI), 0);
 	POINT_MESH.tint = tint;
 	GL.uniform3f(lightPos1, px, py, pz);
-	GL.uniform3fv(lightColour1, tint);
+	GL.uniform3fv(lightColour1, tint.slice(0, 3));
 
 	// spotlight
 	SPOTLIGHT_MESH.transform.setPos(...spotLightPos as [number, number, number]);
 	SPOTLIGHT_MESH.tint = spotLightColor;
-	GL.uniform3fv(lightColour0,  spotLightColor);
+	GL.uniform3fv(lightColour0,  spotLightColor.slice(0, 3));
 	GL.uniform3fv(lightPos0,     spotLightPos);
 	GL.uniform3fv(spotDirection, spotDir);
 	GL.uniform1f(spotIntensity,  spotLightIntensity);
