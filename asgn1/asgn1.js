@@ -120,6 +120,12 @@ function setupListeners() {
 
 	document.getElementById('clearCanvas').addEventListener('click', clearCanvas);
 	document.getElementById('undo').addEventListener('click', undo);
+
+	document.addEventListener('keydown', function (e) {
+		if (e.key === 'Escape') {
+			cancelCurrentPolyTool();
+		}
+	});
 }
 
 function getMode() {
@@ -228,6 +234,7 @@ function renderAllShapes() {
 }
 
 function clearCanvas() {
+	cancelCurrentPolyTool();
 	shapeList = [];
 	renderAllShapes();
 }
@@ -378,6 +385,14 @@ function polylineFinish(isClosed = false) {
 		shapeList.push(shape);
 	}
 	
+	currPolyVerts = [];
+	previewPoly = null;
+	renderAllShapes();
+}
+
+function cancelCurrentPolyTool() {
+	if (currPolyVerts.length === 0 && !previewPoly) return;
+
 	currPolyVerts = [];
 	previewPoly = null;
 	renderAllShapes();
