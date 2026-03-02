@@ -319,7 +319,7 @@ export default class Shape {
 		}
 	}
 
-	#setTint() {
+	setTint() {
 		const [r, g, b, a] = this.tint;
 		window.GL.uniform4f(window.u_FragColor, r, g, b, a);
 	}
@@ -335,7 +335,7 @@ export default class Shape {
 
 	render() {
 		const prevState = this._applyGLState();
-		this.#setTint();
+		this.setTint();
 		const GL = window.GL;
 		const C = this.constructor;
 
