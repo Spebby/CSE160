@@ -157,13 +157,13 @@ async function main(): Promise<void> {
 	
 	// Init world
 	let ground = new Plane(new Transform([0,0,0], [0,0,0], [WORLD_EDGE * 3, 1, WORLD_EDGE * 3]), [117 / 255, 167 / 255, 67 / 255, 1.0], 0.0, './noise.png', {
-		shininess: 0.0, 
+		shininess: 1.0, 
 		specularStrength: 0.0, 
 		rimStrength: 0.0,
 		UVScale: [4.0, 4.0],
 	});
 	let skyBox = new Cube(new Transform([0,0,0],[0,0,0],[-WORLD_EDGE * 3, -WORLD_EDGE * 3, -WORLD_EDGE * 3]), [...skyColor, 1.0], 0.0, null, {
-		shininess: 0,
+		shininess: 1.0,
 		specularStrength: 0,
 		rimStrength: 0
 	});
@@ -185,7 +185,7 @@ async function main(): Promise<void> {
 	treeFoliage = loadedTreeFoliage;
 	treeFoliage.alphaCutout = 0.6;
 	treeFoliage.setMaterial({ 
-		shininess: 0.0, 
+		shininess: 1.0, 
 		specularStrength: 0.0, 
 		rimStrength: 0.0 
 	});

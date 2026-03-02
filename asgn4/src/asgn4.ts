@@ -111,7 +111,7 @@ const FSHADER_SOURCE = `
 		vec3 ambient = mix(groundAmbient, skyAmbient, up) * baseColor.rgb;
 
 		vec3 viewDir   = normalize(u_CameraPos - v_VertexPos);
-		vec3 lightDir0  = normalize(v_LightPosOut0);
+		vec3 lightDir0 = normalize(v_LightPosOut0);
 		vec3 lightDir1 = normalize(v_LightPosOut1);
 
 		// diffuse

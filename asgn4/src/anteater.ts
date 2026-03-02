@@ -88,7 +88,7 @@ export default class Anteater {
 		this.ANIM_MAN = new AnimMan(this.bones, animations);
 		this.cameraFocus = bodyVis;
 		const mat: MaterialProperties = {
-			shininess: 0.0,
+			shininess: 1.0,
 			specularStrength: 0.0,
 			rimStrength: 0.0,
 		};
