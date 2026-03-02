@@ -11,12 +11,13 @@ const WORLD_EDGE: number = 128.0;
 const skyColor: [number, number, number] = [0.05, 0.05, 0.05];
 
 const VSHADER_SOURCE = `
-	precision mediump float;
+	precision highp float;
 	attribute vec4 a_Position;
 	attribute vec4 a_Normal;
 	attribute vec2 a_TexCoord;
 
 	uniform mat4 u_ModelMatrix;
+	uniform mat4 u_NormalMatrix;
 	uniform mat4 u_GlobalRotation;
 	uniform mat4 u_ProjectionMatrix;
 	uniform vec2 u_UVScale;
@@ -32,7 +33,7 @@ const VSHADER_SOURCE = `
 	void main() {
 		vec4 worldPos = u_ModelMatrix * a_Position;
 		v_VertexPos = worldPos.xyz;
-		v_Normal = normalize(mat3(u_ModelMatrix) * a_Normal.xyz);
+		v_Normal = normalize(mat3(u_NormalMatrix) * a_Normal.xyz);
 		v_LightPosOut0 = u_LightPos0 - v_VertexPos;
 		v_LightPosOut1 = u_LightPos1 - v_VertexPos;
 		v_TexCoord = a_TexCoord * u_UVScale;
@@ -40,7 +41,7 @@ const VSHADER_SOURCE = `
 	}`;
 
 const FSHADER_SOURCE = `
-	precision mediump float;
+	precision highp float;
 	varying vec3 v_Normal;
 	varying vec3 v_VertexPos;
 	varying vec3 v_LightPosOut0;
@@ -125,7 +126,7 @@ const FSHADER_SOURCE = `
 
 		// spotlight attenuation on light0
 		float theta     = dot(-normalize(v_LightPosOut0), normalize(u_SpotDirection));
-		float spotMask  = smoothstep(u_SpotRadius - 0.05, u_SpotRadius + 0.05, theta);
+		float spotMask  = smoothstep(max(u_SpotRadius - 0.05, 0.0), u_SpotRadius + 0.05, theta);
 		diffuse0  *= spotMask * u_SpotIntensity;
 		specular0 *= spotMask * u_SpotIntensity;
 
@@ -434,7 +435,7 @@ function connectVariablesToGLSL(): void {
 	// helper for uniforms
 	const getUniform = (name: string, optional = false) => {
 		const loc = GL.getUniformLocation(GL.program!, name);
-		if (!loc && !optional) console.log(`Failed to get location of ${name}`);
+		if (loc === null && !optional) console.log(`Failed to get location of ${name}`);
 		return loc;
 	};
 
@@ -455,6 +456,9 @@ function connectVariablesToGLSL(): void {
 	window.u_ModelMatrix     = getUniform('u_ModelMatrix')!;
 	GL.uniformMatrix4fv(window.u_ModelMatrix, false, new Matrix4().elements);
 
+	window.u_NormalMatrix = getUniform('u_NormalMatrix')!;
+	GL.uniformMatrix4fv(window.u_NormalMatrix, false, new Matrix4().elements);
+
 	window.u_GlobalRotation  = getUniform('u_GlobalRotation')!;
 	const globalRotation = new Matrix4();
 	globalRotation.setIdentity();
@@ -465,7 +469,7 @@ function connectVariablesToGLSL(): void {
 
 	const setUniform1f = (name: string, value: number) => {
 		const loc = getUniform(name);
-		if (loc) GL.uniform1f(loc, value);
+		if (loc !== null) GL.uniform1f(loc, value);
 		return loc;
 	};
 
@@ -503,11 +507,12 @@ function tick(): void {
 	stats.begin();
 
 	CAMERA.update(dt);
+	const viewMatrix = CAMERA.getViewMatrix();
+	GL.uniformMatrix4fv(window.u_GlobalRotation, false, viewMatrix.elements);
+
 	const [camX, camY, camZ] = CAMERA.transform.getWorldPosition();
 	GL.uniform3f(window.u_CameraPos, camX, camY, camZ);
 
-	const viewMatrix = CAMERA.getViewMatrix();
-	GL.uniformMatrix4fv(window.u_GlobalRotation, false, viewMatrix.elements);
 
 	dispatchAnimations(dt);
 	renderAllShapes(dt);

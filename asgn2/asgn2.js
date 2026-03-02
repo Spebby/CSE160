@@ -16,6 +16,7 @@ var VSHADER_SOURCE =
 	attribute vec4 a_Normal;
 
 	uniform mat4 u_ModelMatrix;
+	uniform mat4 u_NormalMatrix;
 	uniform mat4 u_GlobalRotation;
 	uniform mat4 u_ProjectionMatrix;
 
@@ -26,7 +27,7 @@ var VSHADER_SOURCE =
 	void main() {
 		vec4 worldPos = u_ModelMatrix * a_Position;
 		v_FragPos = worldPos.xyz;
-		v_Normal = mat3(u_ModelMatrix) * a_Normal.xyz;
+		v_Normal = mat3(u_NormalMatrix) * a_Normal.xyz;
 		gl_Position = u_ProjectionMatrix * u_GlobalRotation * worldPos;
 	}`;
 
@@ -292,9 +293,18 @@ function connectVariablesToGLSL() {
 		console.log('Failed to get storage location of u_ModelMatrix');
 		return;
 	}
+	
 	window.u_ModelMatrix = tMod;
 	var identityMatrix = new Matrix4();
 	GL.uniformMatrix4fv(window.u_ModelMatrix, false, identityMatrix.elements);
+
+	let tNorm = GL.getUniformLocation(GL.program, 'u_NormalMatrix');
+	if (!tNorm) {
+		console.log('Failed to get storage location of u_NormalMatrix');
+		return;
+	}
+	window.u_NormalMatrix = tNorm;
+	GL.uniformMatrix4fv(window.u_NormalMatrix, false, identityMatrix.elements);
 
 	let tGol = GL.getUniformLocation(GL.program, 'u_GlobalRotation');
 	if (!tGol) {

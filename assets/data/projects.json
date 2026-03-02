@@ -9,7 +9,7 @@
 		},
 		{
 			"title": "Lighting",
-			"description": "Lighting project. Incomplete.",
+			"description": "More advanced lighting using WebGL.",
 			"image": "./assets/images/lighting.png",
 			"tags": [],
 			"link": "./asgn4"

@@ -356,6 +356,11 @@ export default class Shape {
 			false,
 			this.transform.worldMatrix.elements
 		);
+
+		const normalMat = new Matrix4();
+		normalMat.setInverseOf(this.transform.worldMatrix);
+		normalMat.transpose();
+		GL.uniformMatrix4fv(window.u_NormalMatrix, false, normalMat.elements);
 		
 		// Bind vertex positions
 		GL.bindBuffer(GL.ARRAY_BUFFER, vBuffer);

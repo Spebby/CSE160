@@ -100,6 +100,7 @@ interface Window {
     a_TexCoord?: number;
     u_FragColor: WebGLUniformLocation;
     u_ModelMatrix: WebGLUniformLocation;
+	u_NormalMatrix: WebGLUniformLocation;
     u_GlobalRotation: WebGLUniformLocation;
     u_ProjectionMatrix: WebGLUniformLocation;
 	u_CameraPos : WebGLUniformLocation;
