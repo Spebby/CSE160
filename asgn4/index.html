@@ -1,0 +1,200 @@
+---
+title: Lighting
+permalink: /asgn4/
+redirect_from:
+  - /Asgn4/
+  - /a4/
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>{{ page.title }}</title>
+	{% include og-meta.html %}
+	{% include common-head.html %}
+</head>
+<body data-bs-theme="dark" class="bg text-light py-4">
+	<!--Canvas-->
+	<div class="mb-4 mx-4">
+		<canvas
+			id="webgl"
+			class="w-100 d-block border border-primary mx-auto"
+			width="1920" 
+			height="1080"
+			style="position: relative; z-index: 1; pointer-events: auto; height: 700px; background: #000; max-width: 100%;"
+		></canvas>
+	</div>
+
+	<div class="container">
+		<div class="card shadow-sm">
+			<div class="card-body">
+				<h3>Lighting</h3>
+				<label class="mb-4 form-label fw-semibold">Light Settings:</label>
+				<div class="row row-cols-2 row-cols-md-4 g-4 align-items-center">
+					<div id="lightMode" class="btn-group" role="group" aria-label="LightMode">
+						<input type="radio" class="btn-check" name="mode" id="mLit" value="LIT" checked>
+						<label class="btn btn-outline-primary" for="mLit">Lit</label>
+						<input type="radio" class="btn-check" name="mode" id="mNormal" value="NORMAL">
+						<label class="btn btn-outline-primary" for="mNormal">Normal</label>
+						<input type="radio" class="btn-check" name="mode" id="mUnlit" value="UNLIT">
+						<label class="btn btn-outline-primary" for="mUnlit">Unlit</label>
+					</div>
+
+					<div class="col-md-3 text-center">
+						<label for="FOV" class="form-label">FOV</label>
+						<input type="range" class="form-range" id="FOV" min="1" max="180" value="70">
+					</div>
+				</div>
+
+				<!-- User Light Controls -->
+				<div class="mb-4">
+					<div class="row row-cols-2 row-cols-md-4 g-4 align-items-center">
+						<div class="col-md-3">
+							<div class="text-center">
+								<label class="form-label">Point Light Colour</label>
+							</div>
+							<div class="d-flex align-items-center mb-2">
+								<span class="me-2" style="width:20px;">R:</span>
+								<input type="range" class="form-range flex-grow-1" id="c0R" min="0" max="255" value="255" step="1.0">
+							</div>
+
+							<div class="d-flex align-items-center mb-2">
+								<span class="me-2" style="width:20px;">G:</span>
+								<input type="range" class="form-range flex-grow-1" id="c0G" min="0" max="255" value="255" step="1.0">
+							</div>
+
+							<div class="d-flex align-items-center mb-2">
+								<span class="me-2" style="width:20px;">B:</span>
+								<input type="range" class="form-range flex-grow-1" id="c0B" min="0" max="255" value="255" step="1.0">
+							</div>
+						</div>
+
+						<div class="col-md-3">
+							<div class="text-center">
+								<label class="form-label">Point Light Position</label>
+							</div>
+							<div class="d-flex align-items-center mb-2">
+								<span class="me-2" style="width:20px;">X:</span>
+								<input type="range" class="form-range flex-grow-1" id="c0X" min="-100" max="100" value="5" step="0.25">
+							</div>
+
+							<div class="d-flex align-items-center mb-2">
+								<span class="me-2" style="width:20px;">Y:</span>
+								<input type="range" class="form-range flex-grow-1" id="c0Y" min="-100" max="100" value="0" step="0.25">
+							</div>
+
+							<div class="d-flex align-items-center mb-2">
+								<span class="me-2" style="width:20px;">Z:</span>
+								<input type="range" class="form-range flex-grow-1" id="c0Z" min="-100" max="100" value="0" step="0.25">
+							</div>
+						</div>
+
+						<div class="col-md-3 d-flex flex-column gap-2">
+							<div class="text-center">
+								<label for="c1I" class="form-label">Point Radius</label>
+								<input type="range" class="form-range" id="c0Radius" min="0" max="100" value="10" step="0.01">
+							</div>
+
+							<div class="text-center">
+								<label for="c0I" class="form-label">Point Intensity</label>
+								<input type="range" class="form-range" id="c0I" min="0" max="5" value="1" step="0.01">
+							</div>
+						</div>
+
+						<div class="text-center mt-2">
+							<button class="btn btn-sm btn-outline-secondary" id="togglePointAnim">Animating: ON</button>
+						</div>
+					</div>
+
+
+
+					<div class="row row-cols-2 row-cols-md-4 g-4 align-items-center">
+						<div class="col-md-3">
+							<div class="text-center">
+								<label class="form-label">Point Light Colour</label>
+							</div>
+							<div class="d-flex align-items-center mb-2">
+								<span class="me-2" style="width:20px;">R:</span>
+								<input type="range" class="form-range flex-grow-1" id="c1R" min="0" max="255" value="255" step="1.0">
+							</div>
+
+							<div class="d-flex align-items-center mb-2">
+								<span class="me-2" style="width:20px;">G:</span>
+								<input type="range" class="form-range flex-grow-1" id="c1G" min="0" max="255" value="255" step="1.0">
+							</div>
+
+							<div class="d-flex align-items-center mb-2">
+								<span class="me-2" style="width:20px;">B:</span>
+								<input type="range" class="form-range flex-grow-1" id="c1B" min="0" max="255" value="255" step="1.0">
+							</div>
+						</div>
+
+						<div class="col-md-3">
+							<div class="text-center">
+								<label class="form-label">Spot Light Position</label>
+							</div>
+							<div class="d-flex align-items-center mb-2">
+								<span class="me-2" style="width:20px;">X:</span>
+								<input type="range" class="form-range flex-grow-1" id="c1X" min="-100" max="100" value="5" step="0.25">
+							</div>
+
+							<div class="d-flex align-items-center mb-2">
+								<span class="me-2" style="width:20px;">Y:</span>
+								<input type="range" class="form-range flex-grow-1" id="c1Y" min="-100" max="100" value="5" step="0.25">
+							</div>
+
+							<div class="d-flex align-items-center mb-2">
+								<span class="me-2" style="width:20px;">Z:</span>
+								<input type="range" class="form-range flex-grow-1" id="c1Z" min="-100" max="100" value="5" step="0.25">
+							</div>
+						</div>
+
+						<div class="col-md-3">
+							<div class="text-center">
+								<label class="form-label">Spot Light Dir</label>
+							</div>
+							<div class="d-flex align-items-center mb-2">
+								<span class="me-2" style="width:20px;">X:</span>
+								<input type="range" class="form-range flex-grow-1" id="c1DX" min="-100" max="100" value="-5" step="0.25">
+							</div>
+
+							<div class="d-flex align-items-center mb-2">
+								<span class="me-2" style="width:20px;">Y:</span>
+								<input type="range" class="form-range flex-grow-1" id="c1DY" min="-100" max="100" value="-5" step="0.25">
+							</div>
+
+							<div class="d-flex align-items-center mb-2">
+								<span class="me-2" style="width:20px;">Z:</span>
+								<input type="range" class="form-range flex-grow-1" id="c1DZ" min="-100" max="100" value="-5" step="0.25">
+							</div>
+						</div>
+
+						<div class="col-md-3 d-flex flex-column gap-2">
+							<div class="text-center">
+								<label for="c1Radius" class="form-label">Spot Radius</label>
+								<input type="range" class="form-range" id="c1Radius" min="0" max="1" value="0.85" step="0.01">
+							</div>
+
+							<div class="text-center">
+								<label for="c1I" class="form-label">Spot Intensity</label>
+								<input type="range" class="form-range" id="c1I" min="0" max="5" value="0.25" step="0.01">
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!--Bootstrapping-->
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/stats.js@0.17.0/build/stats.min.js"></script>
+	<script src="../assets/lib/cuon-matrix-cse160.js"></script>
+	<script src="../assets/lib/cuon-utils.js"></script>
+	<script src="../assets/lib/webgl-utils.js"></script>
+	<script src="../assets/lib/webgl-debug.js"></script>
+	<script type="module" src="dist/asgn4.js"></script>
+</body>
+</html>

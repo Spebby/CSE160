@@ -76,7 +76,7 @@ declare class Shape {
         material?: MaterialProperties | null
     );
     
-    setTint(): void;
+    #setTint(): void;
     setMaterial(props?: MaterialProperties | null): this;
     loadTexture(path: string): Promise<void>;
     isPowerOf2(value: number): boolean;

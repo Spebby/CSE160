@@ -3,11 +3,11 @@
 import Shape, { Plane, Cube, Prism, Mesh, MaterialProperties } from '../../assets/lib/shapes.js';
 import Transform from '../../assets/lib/transform.js';
 import Camera, { CameraMode } from '../../assets/lib/camera.js';
+import LoadOBJ from '../../assets/lib/objloader.js';
+import Tween from '../../assets/lib/tween.js';
 import Anteater from './anteater.js';
-import LoadOBJ from './objloader.js';
 import GameGrid from './gamegrid.js';
 import MushroomMan from './mushroomman.js';
-import Tween from './tween.js';
 
 const WORLD_EDGE: number = 128.0;
 
@@ -25,10 +25,13 @@ const VSHADER_SOURCE = `
 	varying vec3 v_FragPos;
 	varying vec2 v_TexCoord;
 	uniform vec2 u_UVScale;
-	
+
+	// No normal matrix might be causing problems....
 	void main() {
 		vec4 worldPos = u_ModelMatrix * a_Position;
 		v_FragPos = worldPos.xyz;
+
+		// TODO: review this
 		v_Normal = mat3(u_ModelMatrix) * a_Normal.xyz;
 		gl_Position = u_ProjectionMatrix * u_GlobalRotation * worldPos;
 		v_TexCoord = a_TexCoord * u_UVScale;
@@ -78,7 +81,8 @@ const FSHADER_SOURCE = `
 		if (baseColor.a < u_AlphaCutout) {
 			discard;
 		}
-		
+	
+		// hmmm
 		vec3 normal = normalize(v_Normal);
 		float up = clamp(normal.y * 0.5 + 0.5, 0.0, 1.0);
 		vec3 ambient = mix(groundAmbient, skyAmbient, up);
@@ -321,7 +325,7 @@ function setupWebGL(): void {
 	GL.enable(GL.DEPTH_TEST);
 	GL.enable(GL.BLEND);
 	//GL.blendFunc(GL.SRC_ALPHA, GL.ONE_MINUS_SRC_ALPHA);
-	GL.enable(GL.SAMPLE_ALPHA_TO_COVERAGE);
+	//GL.enable(GL.SAMPLE_ALPHA_TO_COVERAGE);
 
 	window.GL = GL;
 	window.addEventListener('resize', resizeCanvas);
