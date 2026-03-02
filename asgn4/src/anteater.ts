@@ -1,4 +1,4 @@
-import { Cube, SlantedCube, Ramp, Cylinder } from '../../assets/lib/shapes.js';
+import { Cube, SlantedCube, Ramp, Cylinder, MaterialProperties } from '../../assets/lib/shapes.js';
 import Transform from '../../assets/lib/transform.js';
 import { Rig, AnimMan } from '../../assets/lib/animation.js';
 
@@ -23,7 +23,7 @@ export default class Anteater {
 		if (transform === null) transform = new Transform();
 		this.rootTransform = transform;
 		const pivot = transform;
- 
+
 		// Build the anteater from sticks in a shed
 		const pelvis = new Transform([ 0.0,  2.25, -1.35], [-2,   0,   0], [1, 1, 1], transform);
 		const lThigh = new Transform([ 0.5,  0.25,  0.0], [ 0,   0,   0], [1, 1, 1], pelvis);
@@ -87,27 +87,33 @@ export default class Anteater {
 
 		this.ANIM_MAN = new AnimMan(this.bones, animations);
 		this.cameraFocus = bodyVis;
-		this.meshes.push(new Cube(bodyVis, BODY_COLOUR));
-		this.meshes.push(new Cube(lThighVis, BODY_COLOUR));
-		this.meshes.push(new Cube(rThighVis, BODY_COLOUR));
-		this.meshes.push(new Cube(lShinVis, BODY_COLOUR));
-		this.meshes.push(new Cube(rShinVis, BODY_COLOUR));
-		this.meshes.push(new Cube(lFootVis, BODY_COLOUR));
-		this.meshes.push(new Cube(rFootVis, BODY_COLOUR));
-		this.meshes.push(new Cube(tailAVis, BODY_COLOUR));
-		this.meshes.push(new Cube(tailBVis, BODY_DARK));
-		this.meshes.push(new Cube(lBicepVis, BODY_ALT));
-		this.meshes.push(new Cube(rBicepVis, BODY_ALT));
-		this.meshes.push(new Cube(lForearmVis, BODY_ALT));
-		this.meshes.push(new Cube(rForearmVis, BODY_ALT));
-		this.meshes.push(new Cube(lHandVis, CLAWS));
-		this.meshes.push(new Cube(rHandVis, CLAWS));
-		this.meshes.push(new SlantedCube(stripeVis, BODY_DARK));
-		this.meshes.push(new SlantedCube(headVisA, BODY_COLOUR));
-		this.meshes.push(new Cube(headVisB, BODY_COLOUR));
+		const mat: MaterialProperties = {
+			shininess: 0.0,
+			specularStrength: 0.0,
+			rimStrength: 0.0,
+		};
+
+		this.meshes.push(new Cube(bodyVis, BODY_COLOUR, 0.0, null, mat));
+		this.meshes.push(new Cube(lThighVis, BODY_COLOUR, 0.0, null, mat));
+		this.meshes.push(new Cube(rThighVis, BODY_COLOUR, 0.0, null, mat));
+		this.meshes.push(new Cube(lShinVis, BODY_COLOUR, 0.0, null, mat));
+		this.meshes.push(new Cube(rShinVis, BODY_COLOUR, 0.0, null, mat));
+		this.meshes.push(new Cube(lFootVis, BODY_COLOUR, 0.0, null, mat));
+		this.meshes.push(new Cube(rFootVis, BODY_COLOUR, 0.0, null, mat));
+		this.meshes.push(new Cube(tailAVis, BODY_COLOUR, 0.0, null, mat));
+		this.meshes.push(new Cube(tailBVis, BODY_DARK, 0.0, null, mat));
+		this.meshes.push(new Cube(lBicepVis, BODY_ALT, 0.0, null, mat));
+		this.meshes.push(new Cube(rBicepVis, BODY_ALT, 0.0, null, mat));
+		this.meshes.push(new Cube(lForearmVis, BODY_ALT, 0.0, null, mat));
+		this.meshes.push(new Cube(rForearmVis, BODY_ALT, 0.0, null, mat));
+		this.meshes.push(new Cube(lHandVis, CLAWS, 0.0, null, mat));
+		this.meshes.push(new Cube(rHandVis, CLAWS, 0.0, null, mat));
+		this.meshes.push(new SlantedCube(stripeVis, BODY_DARK, 0.0, null, mat));
+		this.meshes.push(new SlantedCube(headVisA, BODY_COLOUR, 0.0, null, mat));
+		this.meshes.push(new Cube(headVisB, BODY_COLOUR, 0.0, null, mat));
 		this.meshes.push(new Cylinder(eye, [0, 0, 0, 1].slice() as [number, number, number, number]));
-		this.meshes.push(new SlantedCube(stripeBVis, BODY_ALT));
-		this.meshes.push(new Ramp(stripeCVis, BODY_DARK));
+		this.meshes.push(new SlantedCube(stripeBVis, BODY_ALT, 0.0, null, mat));
+		this.meshes.push(new Ramp(stripeCVis, BODY_DARK, 0.0, null, mat));
 	}
 
 	update(dt: number): void {

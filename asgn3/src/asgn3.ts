@@ -3,11 +3,11 @@
 import Shape, { Plane, Cube, Prism, Mesh, MaterialProperties } from '../../assets/lib/shapes.js';
 import Transform from '../../assets/lib/transform.js';
 import Camera, { CameraMode } from '../../assets/lib/camera.js';
-import Anteater from './anteater.js';
 import LoadOBJ from '../../assets/lib/objloader.js';
+import Tween from '../../assets/lib/tween.js';
+import Anteater from './anteater.js';
 import GameGrid from './gamegrid.js';
 import MushroomMan from './mushroomman.js';
-import Tween from './tween.js';
 
 const WORLD_EDGE: number = 128.0;
 

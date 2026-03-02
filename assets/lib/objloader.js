@@ -1,4 +1,4 @@
-import { Mesh } from '../../assets/lib/shapes.js';
+import { Mesh } from './shapes.js';
 export default async function LoadOBJ(filepath, albedoPath, transform) {
     const positions = [];
     const normals = [];
@@ -64,4 +64,3 @@ export default async function LoadOBJ(filepath, albedoPath, transform) {
     console.log(`Generated ${vBuff.length / 3} vertices`);
     return new Mesh(transform ?? null, [1, 1, 1, 1], 0.0, vBuff, nBuff, uvBuff.length ? uvBuff : null, albedoPath);
 }
-//# sourceMappingURL=objloader.js.map
