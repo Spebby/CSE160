@@ -176,11 +176,11 @@ const POINT_ORBIT_CENTER: [number, number, number] = [0, 2, 0];
 
 
 let pointAnimating: boolean = true;
-let pointLightColor: [number, number, number] = [1, 1, 1];
-let spotLightColor:  [number, number, number] = [1, 1, 1];
-let spotDir = [-5, -5, -5];
-let spotLightPos = [5, 10, 8];
-let spotLightIntensity = 0.25;
+let pointLightColor: [number, number, number, number] = [1, 1, 1, 1];
+let spotLightColor:  [number, number, number, number] = [1, 1, 1, 1];
+let spotLightPos: [number, number, number] = [5, 10, 8];
+let spotDir:      [number, number, number] = [-5, -5, -5];
+let spotLightIntensity: number = 0.25;
 async function main(): Promise<void> {
 	setupWebGL();
 	connectVariablesToGLSL();
@@ -195,7 +195,7 @@ async function main(): Promise<void> {
 	GL.clear(GL.COLOR_BUFFER_BIT | GL.DEPTH_BUFFER_BIT);
 	resizeCanvas();
 
-	FOV = document.getElementById('FOV').value;
+	FOV = parseFloat((document.getElementById('FOV') as HTMLInputElement).value);
 
 	const cameraTransform = new Transform([0, 5, -8], [15, 0, 0], [1, 1, 1]);
 	CAMERA = new Camera(cameraTransform, null, CameraMode.ORBIT);
@@ -221,7 +221,7 @@ async function main(): Promise<void> {
 		[1, 1, 1]
 	);
 
-	POINT_MESH = new Cube(pointLightTransform, [1.0, 1.0, 1.0], 0.0, null, {
+	POINT_MESH = new Cube(pointLightTransform, [1.0, 1.0, 1.0, 1.0], 0.0, null, {
 		shininess: 64.0,
 		specularStrength: 0.5,
 		rimStrength: 0.3,
@@ -235,7 +235,7 @@ async function main(): Promise<void> {
 	});
 	meshes.push(SPOTLIGHT_MESH);
 
-	let ground = new Plane(new Transform([0, -1, 0], [0, 0, 0], [500, 500, 500]), [0.8, 0.8, 0.8], 0.0, null, {
+	let ground = new Plane(new Transform([0, -1, 0], [0, 0, 0], [500, 500, 500]), [0.8, 0.8, 0.8, 1.0], 0.0, null, {
 		shininess: 8.0,
 		specularStrength: 0.1,
 		rimStrength: 0.0,
@@ -279,28 +279,25 @@ function setupListeners(): void {
 	const modeRadios = document.querySelectorAll('#lightMode input[name="mode"]');
 	modeRadios.forEach(radio => {
 		radio.addEventListener('change', () => {
-			if (!radio.checked) return;
+			const input = radio as HTMLInputElement;
+			if (!input.checked) return;
 			let modeNum: number;
-			switch (radio.value) {
-				case 'LIT':
-					modeNum = 0;
-					break;
-				case 'NORMAL':
-					modeNum = 1;
-					break;
-				case 'UNLIT':
-					modeNum = 2;
-					break;
+			switch (input.value) {
+				case 'LIT':   modeNum = 0; break;
+				case 'NORMAL': modeNum = 1; break;
+				case 'UNLIT':  modeNum = 2; break;
 				default:
-					console.warn(`Unknown mode: ${radio.value}`);
+					console.warn(`Unknown mode: ${input.value}`);
 					return;
 			}
-
 			GL.uniform1f(lightMode, modeNum);
 		});
 	});
 
-	document.getElementById('FOV').addEventListener('input', function() { FOV = this.value; updateProjMatrix(); });
+	document.getElementById('FOV')!.addEventListener('input', function() { 
+		FOV = parseFloat((this as HTMLInputElement).value); 
+		updateProjMatrix(); 
+	});
 
 
 	window.addEventListener('keydown', function(env) {
@@ -472,16 +469,16 @@ function connectVariablesToGLSL(): void {
 		return loc;
 	};
 
-	lightMode = getUniform('u_LightMode');
-	lightPos0 = getUniform('u_LightPos0');
-	lightPos1 = getUniform('u_LightPos1');
-	lightColour0 = getUniform('u_LightColor0');
-	spotDirection = getUniform('u_SpotDirection');
-	spotRadius = setUniform1f('u_SpotRadius', 0.85);
-	spotIntensity = setUniform1f('u_SpotIntensity', 0.25);
-	lightColour1 = getUniform('u_LightColor1');
-	pointRadius = setUniform1f('u_PointRadius', 10.0);
-	pointIntensity = setUniform1f('u_PointIntensity', 1.0);
+	lightMode = getUniform('u_LightMode')!;
+	lightPos0 = getUniform('u_LightPos0')!;
+	lightPos1 = getUniform('u_LightPos1')!;
+	lightColour0 = getUniform('u_LightColor0')!;
+	spotDirection = getUniform('u_SpotDirection')!;
+	spotRadius = setUniform1f('u_SpotRadius', 0.85)!;
+	spotIntensity = setUniform1f('u_SpotIntensity', 0.25)!;
+	lightColour1 = getUniform('u_LightColor1')!;
+	pointRadius = setUniform1f('u_PointRadius', 10.0)!;
+	pointIntensity = setUniform1f('u_PointIntensity', 1.0)!;
 
 
 	window.u_Shininess        = setUniform1f('u_Shininess', 32.0)!;
@@ -539,7 +536,7 @@ function renderAllShapes(dt: number): void {
 	// pointlight update
 	const speed = 0.8;
 	let px: number, py: number, pz: number;
-	let tint: [number, number, number];
+	let tint: [number, number, number, number];
 
 	if (pointAnimating) {
 		pointOrbitAngle += speed * dt;
@@ -599,19 +596,19 @@ function updateProjMatrix(): void {
 // Start the application
 main();
 
-function hsvToRgb(h: number, s: number, v: number): [number, number, number] {
+function hsvToRgb(h: number, s: number, v: number): [number, number, number, number] {
     const i = Math.floor(h * 6);
     const f = h * 6 - i;
     const p = v * (1 - s);
     const q = v * (1 - f * s);
     const t = v * (1 - (1 - f) * s);
     switch (i % 6) {
-        case 0: return [v, t, p];
-        case 1: return [q, v, p];
-        case 2: return [p, v, t];
-        case 3: return [p, q, v];
-        case 4: return [t, p, v];
-        case 5: return [v, p, t];
+        case 0: return [v, t, p, 1];
+        case 1: return [q, v, p, 1];
+        case 2: return [p, v, t, 1];
+        case 3: return [p, q, v, 1];
+        case 4: return [t, p, v, 1];
+        case 5: return [v, p, t, 1];
     }
-    return [v, v, v];
+    return [v, v, v, 1];
 }
