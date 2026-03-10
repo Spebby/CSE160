@@ -1,11 +1,11 @@
 {
 	"projects": [
 		{
-			"title": "???",
+			"title": "Peristeria Backdrop",
 			"description": "Three-JS Project. Incomplete.",
 			"image": "",
 			"tags": [],
-			"link": "../peristeria"
+			"link": "./asgn5"
 		},
 		{
 			"title": "Lighting",
