@@ -5,7 +5,6 @@ redirect_from:
   - /Asgn5/
   - /a5/
 ---
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -14,31 +13,65 @@ redirect_from:
 	<title>{{ page.title }}</title>
 	{% include og-meta.html %}
 	{% include common-head.html %}
+	<link rel="stylesheet" href="asgn5.css">
 </head>
-<body data-bs-theme="dark" class="bg text-light py-4">
-	<!--Canvas-->
-	<div class="mb-4 mx-4">
-		<canvas
-			id="webgl"
-			class="w-100 d-block border border-primary mx-auto"
-			width="1920" 
-			height="1080"
-			style="position: relative; z-index: 1; pointer-events: auto; height: 1110px; background: #000; max-width: 100%;"
-		></canvas>
-	</div>
+<body>
+	<canvas id="webgl"></canvas>
+	<div id="mode-hint">press <kbd>L</kbd> — grading mode</div>
+	<div id="overlay-scroll">
+		<div class="hero-space">
+			<span class="scroll-hint">↓ scroll</span>
+		</div>
+		<div class="panel">
+			<img src="logo.png" alt="Peristeria Logo" class="panel-logo">
+			<div class="divider"></div>
+			<div class="panel-body">
+				<p>
+					A landing page, for my game :)<br>
+					I used this assignment as an exuse to spend some time making a cool website.
+					Unfortunately, it seems like the performance isn't the best.
+					But that could be improved on with time (that I currently done have, as I am writing this...).
+					<br>
 
-	<div class="container">
-		<div class="card shadow-sm">
-			<div class="card-body">
-				<h3>ThreeJS Website</h3>
-				<p></p>
-				<h5>Note for graders...</h5>
-				<p>Press 'L' for "Grading Mode".</p>
+					This website is build using Three.js, and features a custom painterly shader and procedural sky.
+					It also features a decently advanced water shader, ported from Godot, <a href="https://binbun3d.itch.io/godot-water-shader">originally by BinBun</a>
+				</p>
+			</div>
+			<ul class="features">
+				<li>Voronoi painterly normals</li>
+				<li>Toon shading + rim light</li>
+				<li>Procedural sky dome</li>
+				<li>Dynamic sun &amp; golden hour</li>
+				<li>Screen-space water</li>
+				<li>Caustics &amp; foam</li>
+				<li>First-person controls</li>
+				<li>FBM cloud mist</li>
+			</ul>
+			<div class="grader-note">
+				<p class="label">Note for graders</p>
+				<p>Press <kbd>L</kbd> for "Grading Mode" — this enables free-cam, and enables a bunch of the rubric items that I didn't want polluting the scene.</p>
+				<p>Rubric items met:</p>
+				<ul class="features">
+					<li>Basic Scene</li>
+					<li>A textured primary shape</li>
+					<li>Custom, textured 3D model (Creature & Foliage)</li>
+					<li>3 different light sources (Ambient, Directional, Point)</li>
+					<li>"Moving" the camera (panning & rotation)</li>
+					<li>Skybox</li>
+					<li>20 Primary Shapes (turn around)</li>
+				</ul>
+
+				<p>
+				On extra features... I felt like this was a great opportunity to do some animation & some more advanced shaders.
+				I had previously written the painterly shader for my game (though I am not happy with the look...)
+				And the water shader was one I was using in my game, so I figured it would be a good idea to port that.
+				The monster on the cliff is a boss in the game. I added an additional animation for this submission.
+				I wanted to do something more complicated, but the rig is fairly complicated and hard to work with, due to being tripedal.
+				To mask that the animation sucks, he is on the cliff. :)
+				</p>
 			</div>
 		</div>
 	</div>
-
-	<!--Bootstrapping-->
 	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 	<script src="https://cdn.jsdelivr.net/npm/stats.js@0.17.0/build/stats.min.js"></script>
 	<script src="../assets/lib/cuon-matrix-cse160.js"></script>
@@ -46,5 +79,26 @@ redirect_from:
 	<script src="../assets/lib/webgl-utils.js"></script>
 	<script src="../assets/lib/webgl-debug.js"></script>
 	<script type="module" src="dist/asgn5.js"></script>
+	<script>
+		['keydown','touchstart'].forEach(ev =>
+			window.addEventListener(ev, () => document.body.classList.add('interacted'), { once: true })
+		);
+
+		// Reveal panel when scrolled into view
+		const panel = document.querySelector('.panel');
+		const observer = new IntersectionObserver(
+			([entry]) => { if (entry.isIntersecting) panel.classList.add('visible'); },
+			{ threshold: 0.1 }
+		);
+		observer.observe(panel);
+
+		// Forward mousemove from the hero area through to the canvas
+		const webgl = document.getElementById('webgl');
+		document.getElementById('overlay-scroll').addEventListener('mousemove', (e) => {
+			if (!e.target.closest('.panel')) {
+				webgl.dispatchEvent(new MouseEvent('mousemove', e));
+			}
+		});
+	</script>
 </body>
 </html>

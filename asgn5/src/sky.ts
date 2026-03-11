@@ -2,7 +2,7 @@ import * as THREE from 'three';
 
 // This is the skybox from the fragment shader lab, but rewritten to be based on
 // a unit sphere, so the skybox could be an arbitrary size, and not affect the visuals
-const SUN_POS = new THREE.Vector3(0.0, 8.0, 50.0);
+const SUN_POS = new THREE.Vector3(-16.0, 30.0, 36.0);
 
 const vertexShader = `
 	varying vec3 vPos;
@@ -171,7 +171,9 @@ const fragmentShader = `
 		float sunAlign = dot(viewDir2D, sunDir2D);
 
 		// Horizon golden band
-		float horizonBand = exp(-abs(vDir.y) * 6.0) * 1.5;
+float sunElevation = sunDir.y;
+float sunHeightFade = 1.0 - smoothstep(0.0, 0.8, sunElevation);
+float horizonBand = exp(-abs(vDir.y - sunElevation) * 6.0) * 1.5 * sunHeightFade;
 		float sunAngleFactor = pow(max(sunAlign, 0.0), 2.0);
 		colour = mix(colour, GOLDEN, horizonBand * sunAngleFactor * 0.75);
 

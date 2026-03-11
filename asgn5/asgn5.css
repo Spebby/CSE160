@@ -1,0 +1,199 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Inconsolata:wght@300;400&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+	--cream:        #f0ebe0;
+	--ink:          #1a1710;
+	--gold:         #c8a96e;
+	--glass-bg:     rgba(12, 11, 9, 0.62);
+	--glass-border: rgba(200, 169, 110, 0.18);
+	--blur:         18px;
+}
+
+html, body {
+	height: 100%;
+	overflow: hidden;
+	background: #000;
+}
+
+/*Fullscreen canvas*/
+#webgl {
+	position: fixed;
+	inset: 0;
+	width: 100vw;
+	height: 100vh;
+	display: block;
+	z-index: 0;
+}
+
+#overlay-scroll {
+	position: fixed;
+	inset: 0;
+	overflow-y: auto;
+	overflow-x: hidden;
+	z-index: 10;
+}
+
+.hero-space {
+	height: 100vh;
+	display: flex;
+	align-items: flex-end;
+	justify-content: center;
+	padding-bottom: 2rem;
+	pointer-events: none;
+}
+
+.scroll-hint {
+	font-family: 'Inconsolata', monospace;
+	font-size: 0.7rem;
+	letter-spacing: 0.22em;
+	text-transform: uppercase;
+	color: rgba(240, 235, 224, 0.75);
+	animation: pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes pulse {
+	0%, 100% { opacity: 0.3; transform: translateY(0); }
+	50%       { opacity: 0.9; transform: translateY(4px); }
+}
+
+.panel {
+	pointer-events: auto;
+	max-width: 680px;
+	margin: 0 auto 6rem;
+	padding: 3rem 3.5rem 3.5rem;
+	background: var(--glass-bg);
+	backdrop-filter: blur(var(--blur)) saturate(1.4);
+	-webkit-backdrop-filter: blur(var(--blur)) saturate(1.4);
+	border: 1px solid var(--glass-border);
+	border-radius: 2px;
+	color: var(--cream);
+	font-family: 'Cormorant Garamond', Georgia, serif;
+	opacity: 0;
+	transform: translateY(28px);
+	transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+	            transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.panel.visible {
+	opacity: 1;
+	transform: translateY(0);
+}
+
+.panel-title {
+	font-size: clamp(2.4rem, 5vw, 3.6rem);
+	font-weight: 300;
+	line-height: 1.05;
+	letter-spacing: -0.01em;
+	color: var(--cream);
+	margin-bottom: 0.4rem;
+}
+
+.panel-title em {
+	font-style: italic;
+	color: var(--gold);
+}
+
+.panel-logo {
+    display: block;
+    max-width: 100%;
+    max-height: calc(100% - 2rem);
+    margin: 0 auto 1.5rem;
+    height: 100%;
+    object-fit: contain;
+}
+
+.divider {
+	width: 48px;
+	height: 1px;
+	background: var(--glass-border);
+	margin: 1.8rem 0;
+}
+
+.panel-body {
+	font-size: 1.05rem;
+	font-weight: 300;
+	line-height: 1.75;
+	color: rgba(240, 235, 224, 0.8);
+}
+
+.panel-body p + p { margin-top: 1em; }
+
+/* ── Grader note ─────────────────────────────────────────── */
+.grader-note {
+	margin-top: 2.4rem;
+	padding: 1.1rem 1.4rem;
+	border-left: 2px solid var(--gold);
+	background: rgba(200, 169, 110, 0.06);
+}
+
+.grader-note .label {
+	font-family: 'Inconsolata', monospace;
+	font-size: 0.65rem;
+	letter-spacing: 0.22em;
+	text-transform: uppercase;
+	color: var(--gold);
+	margin-bottom: 0.5rem;
+}
+
+.grader-note p {
+	font-size: 0.92rem;
+	line-height: 1.6;
+	color: rgba(240, 235, 224, 0.7);
+}
+
+kbd {
+	display: inline-block;
+	font-family: 'Inconsolata', monospace;
+	font-size: 0.78rem;
+	padding: 0.1em 0.45em;
+	border: 1px solid var(--glass-border);
+	border-radius: 2px;
+	background: rgba(200, 169, 110, 0.12);
+	color: var(--gold);
+	letter-spacing: 0.05em;
+}
+
+/* ── Feature list ────────────────────────────────────────── */
+.features {
+	margin-top: 1.8rem;
+	list-style: none;
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 0.6rem 1.2rem;
+}
+
+.features li {
+	font-family: 'Inconsolata', monospace;
+	font-size: 0.78rem;
+	letter-spacing: 0.06em;
+	color: rgba(240, 235, 224, 0.55);
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+}
+
+.features li::before {
+	content: '—';
+	color: var(--gold);
+	font-size: 0.6rem;
+	flex-shrink: 0;
+}
+
+/* ── Floating mode hint ──────────────────────────────────── */
+#mode-hint {
+	position: fixed;
+	top: 1.6rem;
+	right: 1.8rem;
+	z-index: 20;
+	font-family: 'Inconsolata', monospace;
+	font-size: 0.65rem;
+	letter-spacing: 0.2em;
+	text-transform: uppercase;
+	color: rgba(200, 169, 110, 0.85);
+	pointer-events: none;
+	transition: opacity 0.3s;
+}
+
+body.interacted #mode-hint { opacity: 0; }
