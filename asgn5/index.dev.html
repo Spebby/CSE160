@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>ThreeJS — dev</title>
+	<link rel="stylesheet" href="asgn5.css">
+</head>
+<body>
+	<canvas id="webgl"></canvas>
+	<div id="mode-hint">press <kbd>L</kbd> — grading mode</div>
+	<div id="overlay-scroll">
+		<div class="hero-space">
+			<span class="scroll-hint">↓ scroll</span>
+		</div>
+		<div class="panel">
+			<p class="panel-eyebrow">CSE 160 · Assignment 5</p>
+			<h1 class="panel-title">ThreeJS <em>Website</em></h1>
+			<div class="divider"></div>
+			<div class="panel-body">
+				<p>
+					An interactive real-time scene built with Three.js, featuring a
+					custom painterly toon shader, procedural sky with dynamic sun arc,
+					screen-space water with caustics and refraction, and a first-person
+					camera with clamped pan limits.
+				</p>
+			</div>
+			<ul class="features">
+				<li>Voronoi painterly normals</li>
+				<li>Toon shading + rim light</li>
+				<li>Procedural sky dome</li>
+				<li>Dynamic sun &amp; golden hour</li>
+				<li>Screen-space water</li>
+				<li>Caustics &amp; foam</li>
+				<li>First-person controls</li>
+				<li>FBM cloud mist</li>
+			</ul>
+			<div class="grader-note">
+				<p class="label">Note for graders</p>
+				<p>Press <kbd>L</kbd> for "Grading Mode" — unlocks free-look mouse
+				controls and disables normal pan limits for full scene inspection.</p>
+			</div>
+		</div>
+	</div>
+	<script type="module" src="src/asgn5.ts"></script>
+	<script>
+		['keydown','touchstart'].forEach(ev =>
+			window.addEventListener(ev, () => document.body.classList.add('interacted'), { once: true })
+		);
+
+		const panel = document.querySelector('.panel');
+		const observer = new IntersectionObserver(
+			([entry]) => { if (entry.isIntersecting) panel.classList.add('visible'); },
+			{ threshold: 0.1 }
+		);
+		observer.observe(panel);
+
+		const webgl = document.getElementById('webgl');
+		document.getElementById('overlay-scroll').addEventListener('mousemove', (e) => {
+			if (!e.target.closest('.panel')) {
+				webgl.dispatchEvent(new MouseEvent('mousemove', e));
+			}
+		});
+	</script>
+</body>
+</html>

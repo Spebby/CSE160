@@ -3,3 +3,7 @@ extend-exclude = ["assets/css/*.css", "*.d.ts.map"]
 
 [default.extend-words]
 Shdow = "Shdow"
+iy = "iy"
+ix = "ix"
+ixy = "ixy"
+metalness = "metalness"
