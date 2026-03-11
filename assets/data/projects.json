@@ -2,8 +2,8 @@
 	"projects": [
 		{
 			"title": "Peristeria Backdrop",
-			"description": "Three-JS Project. Incomplete.",
-			"image": "",
+			"description": "Three-JS Project, acting as a main page for a game I'm making :)",
+			"image": "./assets/images/threejs.png",
 			"tags": [],
 			"link": "./asgn5"
 		},

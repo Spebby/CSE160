@@ -21,6 +21,10 @@ let clock: THREE.Clock;
 let skyDome: ReturnType<typeof createSkyDome>;
 let waterRenderer: ReturnType<typeof createWaterRenderer> | null = null;
 
+
+let debugGroup: THREE.Group;
+
+
 function degToRad(degrees) {
     return degrees * (Math.PI / 180);
 }
@@ -148,7 +152,7 @@ function main(): void {
 		waveHighlight: 0.8,
 		waveVelocity: new THREE.Vector2(0.04, 0.04),
 
-		edgeFoamDepthSize: 0.385,
+		edgeFoamDepthSize: 0.485,
 		waveFoamAmount: 0.0,
 		foamStart: 0.0,
 		foamEnd: 0.65,
@@ -195,16 +199,16 @@ function main(): void {
 		depthWrite: true,
 		side: THREE.FrontSide,
 	});
-const foliage = textureLoader.load('foliage_atlas.png');
-foliage.colorSpace = THREE.SRGBColorSpace;
-foliage.flipY = false;
-const treeMat = new THREE.MeshStandardMaterial({
-	map: foliage,
-	alphaTest: 0.5,
-	side: THREE.DoubleSide,
-	roughness: 1.0,
-	metalness: 0.0
-});
+	const foliage = textureLoader.load('foliage_atlas.png');
+	foliage.colorSpace = THREE.SRGBColorSpace;
+	foliage.flipY = false;
+	const treeMat = new THREE.MeshStandardMaterial({
+		map: foliage,
+		alphaTest: 0.5,
+		side: THREE.DoubleSide,
+		roughness: 1.0,
+		metalness: 0.0
+	});
 
 	loader.load(ravineUrl, (gltf) => {
 		const ravine = gltf.scene;
@@ -234,6 +238,15 @@ const treeMat = new THREE.MeshStandardMaterial({
 		});
 	});
 
+	let light = new THREE.HemisphereLight(new THREE.Color(0x57E389), new THREE.Color(0xFACADE), 0.5);
+	light.position.set(25.0, 5.0, 26.370);
+	scene.add(light);
+
+	// the "20 primitives"
+	debugGroup = createDebugObjects();
+	scene.add(debugGroup);
+
+
 	requestAnimationFrame(render);
 }
 
@@ -253,6 +266,7 @@ function setupListeners(): void {
 		if (e.key === 'l' || e.key === 'L') {
 			_debugMode = !_debugMode;
 			setDebugMode(_debugMode, canvas, () => fpCamera.clampToNormalLimits());
+			debugGroup.visible = _debugMode;
 		}
 	});
 
@@ -260,6 +274,7 @@ function setupListeners(): void {
 		if (!document.pointerLockElement && isDebugMode()) {
 			_debugMode = false;
 			setDebugMode(false, canvas, () => fpCamera.clampToNormalLimits());
+			debugGroup.visible = false;
 		}
 	});
 }
@@ -297,6 +312,47 @@ function createAnimationController(mixer: THREE.AnimationMixer, animations: THRE
     }
 
     return { play, playByName, stop, list };
+}
+
+function createDebugObjects(): THREE.Group {
+    const group = new THREE.Group();
+    const geometries = [
+        new THREE.BoxGeometry(1, 1, 1),
+        new THREE.SphereGeometry(0.5, 8, 8),
+        new THREE.CylinderGeometry(0.4, 0.4, 1.2, 8),
+    ];
+    const mat = new THREE.MeshStandardMaterial({ color: 0xff4444, wireframe: true });
+
+    for (let i = 0; i < 20; i++) {
+        const geo = geometries[i % geometries.length];
+        const mesh = new THREE.Mesh(geo, mat);
+        const angle = (i / 20) * Math.PI * 2;
+        const radius = 8 + (i % 4) * 3;
+        mesh.position.set(
+            Math.cos(angle) * radius,
+            (i % 5) * 1.5,
+            Math.sin(angle) * radius,
+        );
+        group.add(mesh);
+    }
+
+const uvMap = new THREE.TextureLoader().load(
+    '../asgn3/uvtest.png',
+    () => console.log('uv texture loaded'),
+    undefined,
+    (err) => console.error('uv texture failed:', err)
+);
+
+const uvCube = new THREE.Mesh(
+    new THREE.BoxGeometry(1, 1, 1),
+    new THREE.MeshBasicMaterial({ map: uvMap, color: 0xffffff })
+);
+
+	uvCube.position.set(-4, 3, -2);
+	group.add(uvCube);
+
+    group.visible = false;
+    return group;
 }
 
 function render(): void {

@@ -76,6 +76,7 @@ export class FirstPersonCamera {
             this.yaw   -= e.movementX * this.debugSensitivity;
             this.pitch -= e.movementY * this.debugSensitivity;
         } else {
+			this.cam.position.copy(this.defaultPosition);
             const rect    = this.canvas.getBoundingClientRect();
             const w       = rect.width  || window.innerWidth;
             const h       = rect.height || window.innerHeight;
