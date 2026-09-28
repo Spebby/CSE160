@@ -1,0 +1,164 @@
+/* old site CSS for compat with old UI
+*/
+
+canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: -1;
+    pointer-events: none;
+}
+
+html, body {
+    overflow-x: hidden;
+    position: relative;
+    min-height: 100vh;
+	scroll-behavior: smooth;
+}
+
+body {
+	overscroll-behaviour-y: none;
+}
+
+footer {
+    margin-top: auto;
+}
+
+.icon {
+    width: 2em;
+    height: 2em;
+    margin: 4px;
+    border-radius: 4px;
+}
+
+.socials {
+    align-content : center;
+
+    display : flex;
+    flex-direction : row;
+    flex-wrap : nowrap;
+    justify-content : flex-start
+}
+
+.socials>a>img {
+    height : 1.8em;
+    width  : 1.8em;
+    
+    border : none;
+    border-radius : 5px;
+
+    cursor : pointer;
+    transition : 0.3s;
+}
+
+.socials>a>img:hover {
+    opacity : 0.7;
+}
+
+.socials>a {
+    align-self : auto;
+    flex : 0 1 auto
+}
+
+.title {
+    color: #222;
+    text-decoration: none;
+    font-variation-settings: "wdth" 100, "SPAC" 0;
+}
+
+.title h1 {
+    transition: 0.2s ease-in-out font-variation-settings;
+}
+
+.title:hover h1 {
+    font-variation-settings: "wght" 900, "wdth" 100, "SPAC" 0;
+}
+
+.hero-section {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 120px 0;
+    min-height: 60vh;
+    display: flex;
+    align-items: center;
+}
+
+/* Section Styles */
+.section-padding {
+    padding: 80px 0;
+}
+
+.section-title {
+    font-weight: 700;
+    margin-bottom: 3rem;
+    position: relative;
+}
+
+.section-title::after {
+    content: '';
+    display: block;
+    width: 60px;
+    height: 4px;
+    background: #667eea;
+    margin: 15px auto 0;
+}
+
+/* Project Cards */
+.project-card {
+    transition: transform 0.3s, box-shadow 0.3s;
+    height: 100%;
+    border: none;
+    display: flex;
+    flex-direction: column;
+}
+
+.project-card .card-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.project-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+}
+
+.card-img-top {
+	height: 234px;
+    object-fit: cover;
+}
+
+/* Navigation */
+.navbar {
+	font-family: 'Raleway';
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.navbar-nav .nav-link {
+    margin: 0 10px;
+    transition: color 0.3s;
+}
+
+.navbar-nav .nav-link:hover {
+    color: #667eea !important;
+}
+
+.glass-box {
+	background: rgba(255, 255, 255, 0.3);
+	backdrop-filter: blur(8px);
+	-webkit-backdrop-filter: blur(8px); /* Safari */
+	border-radius: 16px;
+	padding: 1.25rem 1.5rem;
+	border: 1px solid rgba(255, 255, 255, 0.25);
+	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.glass-box.dark {
+	background: rgba(0, 0, 0, 0.3);
+	color: #fff;
+}
+
+.hidden {
+	display: none;
+}
+
